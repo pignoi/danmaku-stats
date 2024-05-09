@@ -1,17 +1,24 @@
+## 此程序参考https://www.cnblogs.com/aadd123/p/14009467.html，在代码基础上做了适应性修改，在此处鸣谢作者来路生云烟
+
 import websocket
 import threading
 import time
 import requests
 import json
+from db_manager import live_database
+import datetime
 
-class DyDanmu:
-    def __init__(self, roomid, url):
-        self.gift_dict = self.get_gift_dict()
-        self.gift_dict_keys = self.gift_dict.keys()
+class douyuDanmaku:
+    def __init__(self, roomid):
+        url = 'wss://danmuproxy.douyu.com:8501/'
+        # self.gift_dict = self.get_gift_dict()
+        # self.gift_dict_keys = self.gift_dict.keys()
         self.room_id = roomid
         self.client = websocket.WebSocketApp(url, on_open=self.on_open, on_error=self.on_error,
                                             on_message=self.on_message, on_close=self.on_close)
         self.heartbeat_thread = threading.Thread(target=self.heartbeat)
+
+        self.room_db = live_database("douyu", room_id=self.room_id)
 
     def start(self):
         self.client.run_forever()
@@ -29,23 +36,31 @@ class DyDanmu:
 
     def on_error(self, wssobj, mes):
         print(mes)
+        print("error")
 
-    def on_close(self,a,b,c):
-        print(b,c)
+    def on_close(self,wssobj, b, c):
+        # print(b,c)
         print('close')
 
     def send_msg(self, msg):
         msg_bytes = self.msg_encode(msg)
         self.client.send(msg_bytes)
 
-    def on_message(self, wss ,msg):
+    def on_message(self, wssobj, msg):
         message = self.msg_decode(msg)
         # print(message)
         for msg_str in message:
             msg_dict = self.msg_format(msg_str)
-            print(msg_dict)
-            # if msg_dict['type'] == 'chatmsg':
-            #     print(msg_dict['nn'] + ':' + msg_dict['txt'])
+
+            if msg_dict['type'] == 'chatmsg':
+                username = msg_dict['nn']
+                content = msg_dict['txt']
+
+                origin_time = float(f"{int(msg_dict['cst'])/1000:.3f}")
+                std_time = datetime.datetime.strftime(datetime.datetime.fromtimestamp(origin_time), '%Y-%m-%d %H:%M:%S')
+
+                self.room_db.insert((std_time, username, content, json.dumps(msg_dict)))
+
             # if msg_dict['type'] == 'dgb':
             #     if msg_dict['gfid'] in self.gift_dict_keys:
             #         print(msg_dict['nn'] + '\t送出\t' + msg_dict['gfcnt'] + '\t个\t' + self.gift_dict[msg_dict['gfid']])
@@ -66,19 +81,13 @@ class DyDanmu:
         join_group_msg = 'type@=joingroup/rid@=%s/gid@=-9999/' % (self.room_id)
         self.send_msg(join_group_msg)
 
-    # 关闭礼物信息推送
-    def close_gift(self):
-        close_gift_msg = 'type@=dmfbdreq/dfl@=sn@AA=105@ASss@AA=1@AS@Ssn@AA=106@ASss@AA=1@AS@Ssn@AA=107@ASss@AA=1@AS@Ssn@AA=108@ASss@AA=1@AS@Ssn@AA=110@ASss@AA=1@AS@Ssn@AA=901@ASss@AA=1@AS@S/'
-        self.send_msg(close_gift_msg)
-
     # 保持心跳线程
     def heartbeat(self):
         while True:
             # 45秒发送一个心跳包
             self.send_msg('type@=mrkl/')
-            print('发送心跳')
+            # print('发送心跳')
             time.sleep(45)
-
 
     def msg_encode(self, msg):
         # 消息以 \0 结尾，并以utf-8编码
@@ -139,9 +148,3 @@ class DyDanmu:
             gift_json[gift] = gift_json2[gift]['name']
         return gift_json
 
-
-if __name__ == '__main__':
-    roomid = 24422
-    url = 'wss://danmuproxy.douyu.com:8501/'
-    dy = DyDanmu(roomid, url)
-    dy.start()

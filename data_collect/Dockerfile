@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.9
 
 RUN apt update \
     && DEBIAN_FRONTEND=noninteractive apt install -y tzdata \
@@ -12,7 +12,7 @@ ADD . /app
 WORKDIR /app
 RUN pip install --no-cache-dir -r requirements.txt
 
-
+ENV IS_DOCKER=True
 ENV PLATFORM="bilibili"
 ENV ROOM_ID=3044248
 

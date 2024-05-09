@@ -35,4 +35,5 @@ tqdm==4.66.4
 typing_extensions==4.11.0
 tzlocal==5.2
 urllib3==2.2.1
+websocket-client==1.8.0
 yarl==1.9.4
