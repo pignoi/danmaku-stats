@@ -28,7 +28,7 @@ class biliDanmaku:
             origin_time = float(f"{baseinfo[0][4]/1000:.3f}")
             std_time = datetime.datetime.strftime(datetime.datetime.fromtimestamp(origin_time), '%Y-%m-%d %H:%M:%S')
             
-            room_db.insert((std_time, username, content, json.dumps(event)))
+            room_db.insert("danmaku", (std_time, username, content, json.dumps(event)))
     
     def start(self):
         sync(self.room.connect())

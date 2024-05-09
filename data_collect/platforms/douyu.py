@@ -7,20 +7,24 @@ import requests
 import json
 from db_manager import live_database
 import datetime
+import logging
+
+logging.basicConfig(level="INFO")
 
 class douyuDanmaku:
     def __init__(self, roomid):
-        url = 'wss://danmuproxy.douyu.com:8501/'
+        url = 'wss://danmuproxy.douyu.com:8502/'
         # self.gift_dict = self.get_gift_dict()
         # self.gift_dict_keys = self.gift_dict.keys()
         self.room_id = roomid
         self.client = websocket.WebSocketApp(url, on_open=self.on_open, on_error=self.on_error,
                                             on_message=self.on_message, on_close=self.on_close)
-        self.heartbeat_thread = threading.Thread(target=self.heartbeat)
 
         self.room_db = live_database("douyu", room_id=self.room_id)
 
     def start(self):
+        self.stop_threads = False
+        logging.info("正在尝试连接弹幕服务器...未报错则连接成功")
         self.client.run_forever()
 
     def stop(self):
@@ -30,17 +34,22 @@ class douyuDanmaku:
     def on_open(self, wss):
         self.login()
         self.join_group()
+        # 终止心跳程序的线程，为了尽快重启将心跳间隔设为15
+        self.heartbeat_thread = threading.Thread(target=self.heartbeat)
+        self.stop_threads = False
         self.heartbeat_thread.setDaemon(True)
         self.heartbeat_thread.start()
 
-
     def on_error(self, wssobj, mes):
-        print(mes)
-        print("error")
+        print("error: ",mes)
 
     def on_close(self,wssobj, b, c):
         # print(b,c)
-        print('close')
+        logging.warning("远程服务器断开, 正在关闭当次连接...")
+        self.stop_threads = True
+        self.heartbeat_thread.join()
+        logging.info('上一个连接已关闭，正在重连...')
+        self.start()
 
     def send_msg(self, msg):
         msg_bytes = self.msg_encode(msg)
@@ -58,8 +67,8 @@ class douyuDanmaku:
 
                 origin_time = float(f"{int(msg_dict['cst'])/1000:.3f}")
                 std_time = datetime.datetime.strftime(datetime.datetime.fromtimestamp(origin_time), '%Y-%m-%d %H:%M:%S')
-
-                self.room_db.insert((std_time, username, content, json.dumps(msg_dict)))
+                # print(f"{username}: {content}")
+                self.room_db.insert("danmaku",(std_time, username, content, json.dumps(msg_dict)))
 
             # if msg_dict['type'] == 'dgb':
             #     if msg_dict['gfid'] in self.gift_dict_keys:
@@ -84,10 +93,12 @@ class douyuDanmaku:
     # 保持心跳线程
     def heartbeat(self):
         while True:
-            # 45秒发送一个心跳包
+            # 15秒发送一个心跳包
+            if self.stop_threads == True:
+                break
             self.send_msg('type@=mrkl/')
             # print('发送心跳')
-            time.sleep(45)
+            time.sleep(15)
 
     def msg_encode(self, msg):
         # 消息以 \0 结尾，并以utf-8编码
