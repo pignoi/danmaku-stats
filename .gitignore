@@ -1,6 +1,7 @@
-data_collect/userinfo.json
+userinfo.json
 dbs/*
 sqlite.py
 testws.py
+origin_data/
 
 **/__pycache__

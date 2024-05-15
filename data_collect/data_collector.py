@@ -8,7 +8,6 @@ parser.add_argument('-p', '--platform', dest="platform", default="bilibili", typ
 parser.add_argument('-r', '--room', dest="room_id", default=3044248, type=int, help='set room id.')
 
 # 非docker生产环境下设置指定的环境变量，在docker环境中则自动识别为Dockerfile中设置的
-# if os.environ["IS_DOCKER"] == None:
 try:
     os.environ["IS_DOCKER"] == None
 except KeyError:
