@@ -25,7 +25,7 @@ class biliDanmaku:
             username = baseinfo[0][15]["user"]["base"]["name"]
             uid = baseinfo[0][15]["user"]["uid"]
 
-            # 检测是否为直播间弹幕
+            # 检测是否为直播间表情弹幕
             if baseinfo[0][12] == 1:
                 image_url = baseinfo[0][13]["url"]
                 content = json.loads(baseinfo[0][15]["extra"])["content"] + f"({image_url})"

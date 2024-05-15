@@ -11,7 +11,7 @@ parser.add_argument('-r', '--room', dest="room_id", default=3044248, type=int, h
 try:
     os.environ["IS_DOCKER"] == None
 except KeyError:
-    os.environ["USERINFO"]="/home/webapp/danmaku-stats/data_collect/userinfo.json"
+    os.environ["USERINFO"]="/home/webapp/danmaku-stats/userinfo.json"
     os.environ["DB_PATH"]="/home/webapp/danmaku-stats/dbs"
 
 args = parser.parse_args()

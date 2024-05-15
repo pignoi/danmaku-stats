@@ -1,5 +1,7 @@
 import os 
 import sqlite3
+import threading
+import time
 
 class live_database:
     def __init__(self, platform, room_id):
@@ -7,7 +9,7 @@ class live_database:
         plat_dict = {"bilibili":"bili", "douyu":"douyu"}
 
         path_to_db = os.environ.get("DB_PATH")+f"/{plat_dict[platform]}_{room_id}.db"
-        self.conn = sqlite3.connect(path_to_db)
+        self.conn = sqlite3.connect(path_to_db, check_same_thread=False)
         self.cur = self.conn.cursor()
 
         # 目前支持的类型：弹幕，SC(B站限定)，礼物，TBC
@@ -33,12 +35,39 @@ class live_database:
             fans_club TEXT, fans_level TEXT,
             origin_data TEXT
             )""")
+        
+        self.cache_danmaku = []
+        cache_thread = threading.Thread(target=self.drop_cache)
+        cache_thread.setDaemon(True)
+        cache_thread.start()
     
     def insert(self, sheet_name, data):
-        data_numb = len(data)
-        sql_insert = f"INSERT INTO {sheet_name} values ({','.join(['?' for _ in range(data_numb)])})"
-        self.cur.execute(sql_insert, data)
-        self.conn.commit()
+        if sheet_name != "danmaku":
+            data_numb = len(data)
+            sql_insert = f"INSERT INTO {sheet_name} values ({','.join(['?' for _ in range(data_numb)])})"
+            try:
+                self.cur.execute(sql_insert, data)
+                self.conn.commit()
+            except Exception as e:
+                self.conn.rollback()
+        else:
+            self.cache_danmaku.append(data)
+    
+    def drop_cache(self):
+        start_time = time.time()
+        sql_insert = f"INSERT INTO danmaku values ({','.join(['?' for _ in range(6)])})"
+        while True:
+            now_time = time.time()
+            if len(self.cache_danmaku) > 500 or now_time - start_time >= 120:
+                try:
+                    self.cur.executemany(sql_insert, self.cache_danmaku)
+                    self.conn.commit()
+                except Exception as e:
+                    self.conn.rollback()
+                    
+                start_time = time.time()
+                self.cache_danmaku = []
+            time.sleep(30)
     
     def select_by_time(self, sheet_name, time_span):
         start_time = time_span[0]
