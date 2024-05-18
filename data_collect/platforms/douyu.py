@@ -43,7 +43,7 @@ class douyuDanmaku:
         self.heartbeat_thread.start()
 
     def on_error(self, wssobj, mes):
-        print("error: ",mes)
+        print("error: ", mes)
 
     def on_close(self,wssobj, b, c):
         # print(b,c)
@@ -63,51 +63,58 @@ class douyuDanmaku:
         for msg_str in message:
             msg_dict = self.msg_format(msg_str)
             
-            # sender info
-            if msg_dict['type'] == 'chatmsg' or msg_dict['type'] == 'dgb':
-                username = msg_dict['nn']
-                fans_club = msg_dict["bnn"]
-                fans_level = msg_dict["bl"]
-                if fans_club == "":
-                    fans_club = "无"
-                    fans_level = 0
-            
-            # 接受弹幕信息
-            if msg_dict['type'] == 'chatmsg':
-                content = msg_dict['txt']
-                uid = msg_dict['uid']
-                try:
-                    origin_time = float(f"{int(msg_dict['cst'])/1000:.3f}")
-                    std_time = datetime.datetime.strftime(datetime.datetime.fromtimestamp(origin_time), '%Y-%m-%d %H:%M:%S')
-                except KeyError:
-                    std_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+            if type(msg_dict) == dict:
+                # sender info
+                if "type" in msg_dict.keys():
+                    if msg_dict['type'] == 'chatmsg' or msg_dict['type'] == 'dgb':
+                        username = msg_dict['nn']
+                        try:
+                            fans_club = msg_dict["bnn"]
+                            fans_level = msg_dict["bl"]
+                        except KeyError:
+                            fans_club = "无"
+                            fans_level = 0
 
-                self.room_db.insert("danmaku",(std_time, username, content, uid, fans_club, fans_level))
-            
-            # 接受礼物信息，粉丝荧光棒做统一处理
-            if msg_dict['type'] == 'dgb':
-                std_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
-                if msg_dict['gfid'] in self.gift_dict_keys:
-                    giftname = self.gift_dict[msg_dict['gfid']]
-                    giftcount = msg_dict["gfcnt"]
-                else:
-                    try:
-                        giftname = msg_dict["gcn"]
-                    except:
-                        giftname = "未知礼物"
-                    giftcount = msg_dict["gfcnt"]
-                
-                if giftname != "粉丝荧光棒":
-                    self.room_db.insert("gifts", (std_time, username, giftname, \
-                                giftcount, \
-                                fans_club, fans_level, json.dumps(msg_dict, ensure_ascii=False)))
-                else:
-                    self.ygb += int(giftcount)
-                    if self.ygb >= 5000:
-                        self.room_db.insert("gifts", (std_time, "荧光棒统计", giftname, \
-                                self.ygb, \
-                                "all fans", 0, "ygb"))
-                        self.ygb = 0
+                        if fans_club == "":
+                            fans_club = "无"
+                            fans_level = 0
+                                    
+                    # 接受弹幕信息
+                    if msg_dict['type'] == 'chatmsg':
+                        content = msg_dict['txt']
+                        uid = msg_dict['uid']
+                        try:
+                            origin_time = float(f"{int(msg_dict['cst'])/1000:.3f}")
+                            std_time = datetime.datetime.strftime(datetime.datetime.fromtimestamp(origin_time), '%Y-%m-%d %H:%M:%S')
+                        except KeyError:
+                            std_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+
+                        self.room_db.insert("danmaku",(std_time, username, content, uid, fans_club, fans_level))
+                    
+                    # 接受礼物信息，粉丝荧光棒做统一处理
+                    if msg_dict['type'] == 'dgb':
+                        std_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+                        if msg_dict['gfid'] in self.gift_dict_keys:
+                            giftname = self.gift_dict[msg_dict['gfid']]
+                            giftcount = msg_dict["gfcnt"]
+                        else:
+                            try:
+                                giftname = msg_dict["gcn"]
+                            except:
+                                giftname = "未知礼物"
+                            giftcount = msg_dict["gfcnt"]
+                        
+                        if giftname != "粉丝荧光棒":
+                            self.room_db.insert("gifts", (std_time, username, giftname, \
+                                        giftcount, \
+                                        fans_club, fans_level, json.dumps(msg_dict, ensure_ascii=False)))
+                        else:
+                            self.ygb += int(giftcount)
+                            if self.ygb >= 5000:
+                                self.room_db.insert("gifts", (std_time, "荧光棒统计", giftname, \
+                                        self.ygb, \
+                                        "all fans", 0, "ygb"))
+                                self.ygb = 0
 
     # 发送登录信息
     def login(self):
@@ -175,7 +182,7 @@ class douyuDanmaku:
                 msg_dict[msg_tmp[0]] = msg_tmp[1]
             return msg_dict
         except Exception as e:
-            print(str(e))
+            logging.info(str(e))
 
     def get_gift_dict(self):
         gift_json = {}

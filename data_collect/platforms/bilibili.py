@@ -92,7 +92,7 @@ class biliDanmaku:
 
             try:
                 u = user.User(event["data"]["data"]["uid"], credential=credential)
-                medal_info = sync(u.get_user_medal())["list"][0]["medal_info"]
+                medal_info = await sync(u.get_user_medal())["list"][0]["medal_info"]
                 fans_club = medal_info["medal_name"]
                 fans_level = medal_info["level"]
             except:

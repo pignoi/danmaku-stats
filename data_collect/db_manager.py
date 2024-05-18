@@ -2,6 +2,7 @@ import os
 import sqlite3
 import threading
 import time
+import logging
 
 class live_database:
     def __init__(self, platform, room_id):
@@ -37,9 +38,13 @@ class live_database:
             )""")
         
         self.cache_danmaku = []
-        cache_thread = threading.Thread(target=self.drop_cache)
-        cache_thread.setDaemon(True)
-        cache_thread.start()
+        self.cache_thread = threading.Thread(target=self.drop_cache)
+        self.cache_thread.setDaemon(True)
+        self.cache_thread.start()
+
+        monitor_thread = threading.Thread(target=self.monitor_danmaku)
+        monitor_thread.setDaemon(True)
+        monitor_thread.start()
     
     def insert(self, sheet_name, data):
         if sheet_name != "danmaku":
@@ -47,13 +52,15 @@ class live_database:
             sql_insert = f"INSERT INTO {sheet_name} values ({','.join(['?' for _ in range(data_numb)])})"
             try:
                 self.cur.execute(sql_insert, data)
-                self.conn.commit()
             except Exception as e:
                 self.conn.rollback()
+            finally:
+                self.conn.commit()
         else:
             self.cache_danmaku.append(data)
     
     def drop_cache(self):
+        logging.info("start child threading.")
         start_time = time.time()
         sql_insert = f"INSERT INTO danmaku values ({','.join(['?' for _ in range(6)])})"
         while True:
@@ -61,14 +68,25 @@ class live_database:
             if len(self.cache_danmaku) > 500 or now_time - start_time >= 120:
                 try:
                     self.cur.executemany(sql_insert, self.cache_danmaku)
-                    self.conn.commit()
                 except Exception as e:
                     self.conn.rollback()
+                finally:
+                    self.conn.commit()
                     
                 start_time = time.time()
                 self.cache_danmaku = []
             time.sleep(30)
     
+    def monitor_danmaku(self):
+        while True:
+            if self.cache_thread.is_alive() == False:
+                logging.info("danmaku drop cache child process died.")
+                # self.cache_thread.join()
+                self.cache_thread = threading.Thread(target=self.drop_cache)
+                self.cache_thread.setDaemon(True)
+                self.cache_thread.start()
+            time.sleep(0.5)
+
     def select_by_time(self, sheet_name, time_span):
         start_time = time_span[0]
         end_time = time_span[1]
