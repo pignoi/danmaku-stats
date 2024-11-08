@@ -65,7 +65,8 @@ class douyuDanmaku:
             
             if type(msg_dict) == dict:
                 # sender info
-                if "type" in msg_dict.keys():
+                keys = msg_dict.keys()
+                if ("type" in keys) and ("nn" in keys):
                     if msg_dict['type'] == 'chatmsg' or msg_dict['type'] == 'dgb':
                         username = msg_dict['nn']
                         try:
@@ -80,7 +81,7 @@ class douyuDanmaku:
                             fans_level = 0
                                     
                     # 接受弹幕信息
-                    if msg_dict['type'] == 'chatmsg':
+                    if msg_dict['type'] == 'chatmsg' and ("txt" in keys):
                         content = msg_dict['txt']
                         uid = msg_dict['uid']
                         try:
@@ -92,7 +93,7 @@ class douyuDanmaku:
                         self.room_db.insert("danmaku",(std_time, username, content, uid, fans_club, fans_level))
                     
                     # 接受礼物信息，粉丝荧光棒做统一处理
-                    if msg_dict['type'] == 'dgb':
+                    if msg_dict['type'] == 'dgb' and ("gfcnt" in keys):
                         std_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
                         if msg_dict['gfid'] in self.gift_dict_keys:
                             giftname = self.gift_dict[msg_dict['gfid']]

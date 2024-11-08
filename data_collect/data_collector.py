@@ -7,12 +7,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--platform', dest="platform", default="bilibili", type=str, help='set platform.')
 parser.add_argument('-r', '--room', dest="room_id", default=3044248, type=int, help='set room id.')
 
-# 非docker生产环境下设置指定的环境变量，在docker环境中则自动识别为Dockerfile中设置的
+# 非docker生产环境下设置指定的环境变量，在docker环境中则自动识别为Dockerfile中设置的变量，同时满足程序调试和生产环境
 try:
     os.environ["IS_DOCKER"] == None
 except KeyError:
-    os.environ["USERINFO"]="/home/webapp/danmaku-stats/userinfo.json"
-    os.environ["DB_PATH"]="/home/webapp/danmaku-stats/dbs"
+    os.environ["USERINFO"] = os.path.join(os.path.dirname(__file__), "..", "userinfo.json")
+    os.environ["DB_PATH"] = os.path.join(os.path.dirname(__file__), "..", "dbs")
 
 args = parser.parse_args()
 platform = args.platform
