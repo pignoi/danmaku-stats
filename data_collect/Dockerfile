@@ -10,7 +10,7 @@ ENV TZ=Asia/Shanghai
 
 ADD . /app
 WORKDIR /app
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
 
 ENV IS_DOCKER=True
 ENV PLATFORM="bilibili"

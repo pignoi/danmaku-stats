@@ -1,7 +1,7 @@
 ## 此脚本可以用于快速开启收集程序，如果需要用到bilibili的收集程序，需要先在指定目录下修改对应的userinfo_sample.json。该脚本提供一个模版，如果需要循环等功能请自行添加。
 #!/bin/bash
 
-WORK_DIR=/home/webapp/danmaku-stats    # change your workdir here
+WORK_DIR=`pwd`    # change your workdir here
 PLATFORM=bilibili
 ROOM_ID=3044258
 DOCKER_NAME=collect_zc    # 方便docker管理

@@ -90,14 +90,15 @@ class biliDanmaku:
             username = event["data"]["data"]["username"]
             content = event["data"]["data"]["gift_name"]
 
-            try:
-                u = user.User(event["data"]["data"]["uid"], credential=credential)
-                medal_info = sync(u.get_user_medal())["list"][0]["medal_info"]
-                fans_club = medal_info["medal_name"]
-                fans_level = medal_info["level"]
-            except:
-                fans_club = "unknown"
-                fans_level = 0
+            ## 此处使用get_user_medal总会报错，暂时不做处理直接不加这个功能，后面再做相关测试。
+            # try:
+            #     u = user.User(event["data"]["data"]["uid"], credential=credential)
+            #     medal_info = sync(u.get_user_medal())["list"][0]["medal_info"]
+            #     fans_club = medal_info["medal_name"]
+            #     fans_level = medal_info["level"]
+            # except:
+            fans_club = "unknown"
+            fans_level = 0
 
             price = event["data"]["data"]["price"]
             origin_time = float(event["data"]["data"]["start_time"])
