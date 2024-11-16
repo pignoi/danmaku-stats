@@ -12,7 +12,7 @@ import logging
 logging.basicConfig(level="INFO")
 
 class douyuDanmaku:
-    def __init__(self, roomid):
+    def __init__(self, roomid, accept_gift:bool=False):
         url = 'wss://danmuproxy.douyu.com:8502/'
         self.gift_dict = self.get_gift_dict()
         self.gift_dict_keys = self.gift_dict.keys()
@@ -22,6 +22,7 @@ class douyuDanmaku:
 
         self.ygb = 0
 
+        self.accept_gift = accept_gift
         self.room_db = live_database("douyu", room_id=self.room_id)
 
     def start(self):
@@ -93,29 +94,30 @@ class douyuDanmaku:
                         self.room_db.insert("danmaku",(std_time, username, content, uid, fans_club, fans_level))
                     
                     # 接受礼物信息，粉丝荧光棒做统一处理
-                    if msg_dict['type'] == 'dgb' and ("gfcnt" in keys):
-                        std_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
-                        if msg_dict['gfid'] in self.gift_dict_keys:
-                            giftname = self.gift_dict[msg_dict['gfid']]
-                            giftcount = msg_dict["gfcnt"]
-                        else:
-                            try:
-                                giftname = msg_dict["gcn"]
-                            except:
-                                giftname = "未知礼物"
-                            giftcount = msg_dict["gfcnt"]
-                        
-                        if giftname != "粉丝荧光棒":
-                            self.room_db.insert("gifts", (std_time, username, giftname, \
-                                        giftcount, \
-                                        fans_club, fans_level, json.dumps(msg_dict, ensure_ascii=False)))
-                        else:
-                            self.ygb += int(giftcount)
-                            if self.ygb >= 5000:
-                                self.room_db.insert("gifts", (std_time, "荧光棒统计", giftname, \
-                                        self.ygb, \
-                                        "all fans", 0, "ygb"))
-                                self.ygb = 0
+                    elif self.accept_gift == True:
+                        if msg_dict['type'] == 'dgb' and ("gfcnt" in keys):
+                            std_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+                            if msg_dict['gfid'] in self.gift_dict_keys:
+                                giftname = self.gift_dict[msg_dict['gfid']]
+                                giftcount = msg_dict["gfcnt"]
+                            else:
+                                try:
+                                    giftname = msg_dict["gcn"]
+                                except:
+                                    giftname = "未知礼物"
+                                giftcount = msg_dict["gfcnt"]
+                            
+                            if giftname != "粉丝荧光棒":
+                                self.room_db.insert("gifts", (std_time, username, giftname, \
+                                            giftcount, \
+                                            fans_club, fans_level, json.dumps(msg_dict, ensure_ascii=False)))
+                            else:
+                                self.ygb += int(giftcount)
+                                if self.ygb >= 5000:
+                                    self.room_db.insert("gifts", (std_time, "荧光棒统计", giftname, \
+                                            self.ygb, \
+                                            "all fans", 0, "ygb"))
+                                    self.ygb = 0
 
     # 发送登录信息
     def login(self):
@@ -188,8 +190,7 @@ class douyuDanmaku:
     def get_gift_dict(self):
         gift_json = {}
         gift_json1 = requests.get('https://webconf.douyucdn.cn/resource/common/gift/flash/gift_effect.json').text
-        gift_json2 = requests.get(
-            'https://webconf.douyucdn.cn/resource/common/prop_gift_list/prop_gift_config.json').text
+        gift_json2 = requests.get('https://webconf.douyucdn.cn/resource/common/prop_gift_list/prop_gift_config.json').text
         gift_json1 = gift_json1.replace('DYConfigCallback(', '')[0:-2]
         gift_json2 = gift_json2.replace('DYConfigCallback(', '')[0:-2]
         gift_json1 = json.loads(gift_json1)['data']['flashConfig']

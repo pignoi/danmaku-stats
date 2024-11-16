@@ -15,5 +15,6 @@ RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r re
 ENV IS_DOCKER=True
 ENV PLATFORM="bilibili"
 ENV ROOM_ID=3044248
+ENV ACCEPT_GIFT=False
 
-CMD python3 data_collector.py -p $PLATFORM -r $ROOM_ID
+CMD python3 data_collector.py -p $PLATFORM -r $ROOM_ID -g $ACCEPT_GIFT
