@@ -3,7 +3,7 @@
 
 WORK_DIR=`pwd`    # change your workdir here
 PLATFORM=bilibili
-ROOM_ID=3044258
+ROOM_ID=3044248
 DOCKER_NAME=collect_zc    # 方便docker管理
 
 if  [ ! -d $WORK_DIR/dbs ]; then
@@ -15,4 +15,4 @@ if  [ ! -f $WORK_DIR/userinfo.json ] && [ $PLATFORM == bilibili ]; then
     exit 1
 fi
 
-docker run -d -v $WORK_DIR/dbs/:/app/dbs -v $WORK_DIR/userinfo.json:/app/userinfo.json -e PLATFORM=$PLATFORM -e ROOM_ID=$ROOM_ID --restart always --name $DOCKER_NAME pignoi/danmaku-collector:v1.3
+docker run -d -v $WORK_DIR/dbs/:/app/dbs -v $WORK_DIR/userinfo.json:/app/userinfo.json -e PLATFORM=$PLATFORM -e ROOM_ID=$ROOM_ID --restart always --name $DOCKER_NAME pignoi/danmaku_collector:v0.1.0

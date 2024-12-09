@@ -1,15 +1,19 @@
 FROM python:3.9
 
+RUN mv /etc/apt/sources.list.d /etc/apt/sources.list.d.bak
+ADD sources.list.d/ /etc/apt/
+
 RUN apt update \
-    && DEBIAN_FRONTEND=noninteractive apt install -y tzdata \
+    && apt install -y tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 ENV DB_PATH=/app/dbs
 ENV USERINFO=/app/userinfo.json
 ENV TZ=Asia/Shanghai
 
-ADD . /app
-WORKDIR /app
+ADD ./data_collect /app/data_collect
+ADD ./basetools /app/basetools
+WORKDIR /app/data_collect
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
 
 ENV IS_DOCKER=True

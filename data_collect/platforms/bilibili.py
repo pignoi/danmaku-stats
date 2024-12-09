@@ -1,6 +1,6 @@
 from bilibili_api import live, sync, user
 from bilibili_api import Credential
-from db_manager import live_database
+from basetools.db_manager import live_database
 import json
 import os
 import datetime

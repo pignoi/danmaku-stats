@@ -1,11 +1,10 @@
 ## 此程序参考https://www.cnblogs.com/aadd123/p/14009467.html，在代码基础上做了适应性修改，在此处鸣谢作者来路生云烟
-
 import websocket
 import threading
 import time
 import requests
 import json
-from db_manager import live_database
+from basetools.db_manager import live_database
 import datetime
 import logging
 
@@ -58,6 +57,7 @@ class douyuDanmaku:
         msg_bytes = self.msg_encode(msg)
         self.client.send(msg_bytes)
 
+    # 此处实现极其不优雅，后续需要优化一下
     def on_message(self, wssobj, msg):
         message = self.msg_decode(msg)
         # print(message)
