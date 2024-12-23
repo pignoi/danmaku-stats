@@ -1,11 +1,11 @@
 from bilibili_api import live, sync, user
 from bilibili_api import Credential
-from basetools.db_manager import live_database
+from basetools.db_manager import LiveDatabase
 import json
 import os
 import datetime
 
-class biliDanmaku:
+class BiliDanmaku:
     def __init__(self, room_id, accept_gift:bool=False):
         
         userinfo = json.load(open(os.environ.get("USERINFO")))
@@ -15,7 +15,7 @@ class biliDanmaku:
                                 dedeuserid=userinfo["dedeuserid"])
 
         self.room = live.LiveDanmaku(room_id, credential=credential)
-        room_db = live_database("bilibili", room_id)
+        room_db = LiveDatabase("bilibili", room_id)
 
         @self.room.on('DANMU_MSG')
         async def on_danmaku(event):

@@ -3,8 +3,8 @@ sys.path.append("../")
 
 import os
 import argparse
-from platforms.bilibili import biliDanmaku
-from platforms.douyu import douyuDanmaku
+from platforms.bilibili import BiliDanmaku
+from platforms.douyu import DouyuDanmaku
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--platform', dest="platform", default="bilibili", type=str, help='set platform.')
@@ -34,9 +34,9 @@ else:
 if __name__ == "__main__":
 
     if platform == "bilibili":
-        room_class = biliDanmaku(room_id, accept_gift)
+        room_class = BiliDanmaku(room_id, accept_gift)
     
     if platform == "douyu":
-        room_class = douyuDanmaku(room_id, accept_gift)
+        room_class = DouyuDanmaku(room_id, accept_gift)
 
     room_class.start()

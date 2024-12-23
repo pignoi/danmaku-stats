@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.9-slim
 
 RUN mv /etc/apt/sources.list.d /etc/apt/sources.list.d.bak
 ADD sources.list.d/ /etc/apt/
@@ -21,4 +21,5 @@ ENV PLATFORM="bilibili"
 ENV ROOM_ID=3044248
 ENV ACCEPT_GIFT=False
 
+# CMD ["python3", "data_collector.py", "-p", $PLATFORM, "-r", $ROOM_ID, "-g", $ACCEPT_GIFT]    # TODO: 这一行含变量使用JSON会报错，不适用会报warning
 CMD python3 data_collector.py -p $PLATFORM -r $ROOM_ID -g $ACCEPT_GIFT

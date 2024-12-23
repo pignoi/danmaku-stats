@@ -1,8 +1,9 @@
 userinfo.json
 dbs/*
-sqlite.py
-testws.py
 origin_data/
+**/*test*
+
+webui/configs/*update.json
 
 **/__pycache__
 sources.list.d/

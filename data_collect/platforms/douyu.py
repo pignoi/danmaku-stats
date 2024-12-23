@@ -4,13 +4,13 @@ import threading
 import time
 import requests
 import json
-from basetools.db_manager import live_database
+from basetools.db_manager import LiveDatabase
 import datetime
 import logging
 
 logging.basicConfig(level="INFO")
 
-class douyuDanmaku:
+class DouyuDanmaku:
     def __init__(self, roomid, accept_gift:bool=False):
         url = 'wss://danmuproxy.douyu.com:8502/'
         self.gift_dict = self.get_gift_dict()
@@ -22,7 +22,7 @@ class douyuDanmaku:
         self.ygb = 0
 
         self.accept_gift = accept_gift
-        self.room_db = live_database("douyu", room_id=self.room_id)
+        self.room_db = LiveDatabase("douyu", room_id=self.room_id)
 
     def start(self):
         self.stop_threads = False

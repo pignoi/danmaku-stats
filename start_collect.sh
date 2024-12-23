@@ -15,4 +15,9 @@ if  [ ! -f $WORK_DIR/userinfo.json ] && [ $PLATFORM == bilibili ]; then
     exit 1
 fi
 
-docker run -d -v $WORK_DIR/dbs/:/app/dbs -v $WORK_DIR/userinfo.json:/app/userinfo.json -e PLATFORM=$PLATFORM -e ROOM_ID=$ROOM_ID --restart always --name $DOCKER_NAME pignoi/danmaku_collector:v0.1.0
+docker run -d -v $WORK_DIR/dbs/:/app/dbs \
+ -v $WORK_DIR/userinfo.json:/app/userinfo.json \
+ -e PLATFORM=$PLATFORM \
+ -e ROOM_ID=$ROOM_ID \
+ --name $DOCKER_NAME \
+ --restart always pignoi/danmaku_collector:v0.1.1
