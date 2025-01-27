@@ -2,6 +2,7 @@
 #!/bin/bash
 
 WORK_DIR=`pwd`    # change your workdir here
+DB_DROP_INTERVAL=5
 PLATFORM=bilibili
 ROOM_ID=3044248
 DOCKER_NAME=collect_zc    # 方便docker管理
@@ -19,5 +20,6 @@ docker run -d -v $WORK_DIR/dbs/:/app/dbs \
  -v $WORK_DIR/userinfo.json:/app/userinfo.json \
  -e PLATFORM=$PLATFORM \
  -e ROOM_ID=$ROOM_ID \
+ -e DB_DROP_INTERVAL=$DB_DROP_INTERVAL \
  --name $DOCKER_NAME \
- --restart always pignoi/danmaku_collector:v0.1.1
+ --restart always pignoi/danmaku_collector:v0.1.3

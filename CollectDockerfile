@@ -17,6 +17,8 @@ WORKDIR /app/data_collect
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
 
 ENV IS_DOCKER=True
+ENV DB_DROP_INTERVAL=5
+
 ENV PLATFORM="bilibili"
 ENV ROOM_ID=3044248
 ENV ACCEPT_GIFT=False

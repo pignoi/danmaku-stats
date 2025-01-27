@@ -43,8 +43,14 @@ class LiveDatabase:
             fans_club TEXT, fans_level TEXT,
             origin_data TEXT
             )""")
-        
+
         if collect_mode == True:
+
+            try:
+                self.drop_interval = float(os.environ["DB_DROP_INTERVAL"])
+            except KeyError:
+                self.drop_interval = 5
+
             self.cache_danmaku = []
             self.cache_thread = threading.Thread(target=self.drop_cache)
             self.cache_thread.setDaemon(True)
@@ -73,7 +79,7 @@ class LiveDatabase:
         sql_insert = f"INSERT INTO danmaku values ({','.join(['?' for _ in range(6)])})"
         while True:
             now_time = time.time()
-            if len(self.cache_danmaku) > 500 or now_time - start_time >= 120:
+            if len(self.cache_danmaku) > 50 or now_time - start_time >= self.drop_interval:
                 try:
                     self.cur.executemany(sql_insert, self.cache_danmaku)
                 except Exception as e:
@@ -83,7 +89,8 @@ class LiveDatabase:
                     
                 start_time = time.time()
                 self.cache_danmaku = []
-            time.sleep(30)
+            
+            time.sleep(self.drop_interval/2)
     
     def monitor_danmaku(self):
         while True:

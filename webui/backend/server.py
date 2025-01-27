@@ -1,15 +1,17 @@
 import sys
-sys.path.append("../")
+sys.path.append("../../")
 
 import flask
 import os 
 import time
 import json
-from flask import request,redirect,abort
+from flask import request,redirect, abort, jsonify
 from wsgiref.simple_server import make_server
 
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
+from tools.data_filter import GenStats
 
 def ip_user():     # 获取访问者的ip以及useragent，判断是否在ban的范围之内，如果是返回值为0，后面会禁止访问
     with open(".banned_ip") as f:
@@ -75,15 +77,41 @@ def demo429(e):
     
     return redirect("https://bing.com")
 
-@server.route('/')
+@server.route('/', methods=["GET"])
 def index():
     check = ip_user()
     if check == 1:
-        with open("static/首页.html") as f:
+        with open("static/index.html") as f:
             return "".join(f.readlines())
     else:
         abort(404)
 
+@server.route("/check", methods=["POST"])
+def check_room_exist():
+    platform = request.json.get('platform')
+    room_id = request.json.get('room_id')
+
+    with open("configs/avail_room.json") as f:
+        room_dict = json.load(f)
+
+    if str(room_id) in room_dict[platform]:
+        return jsonify({"message": "yes"})
+    else:
+        return jsonify({"message": "no"})
+
+@server.route("/get_by_time", methods=["POST"])
+def time_mes():
+    platform = request.json.get('platform')
+    room_id = request.json.get('room_id')
+    timeunit = request.json.get('timeunit')
+    timevalue = request.json.get('timevalue')
+
+    StaticClass = GenStats(platform, room_id)
+
+    message = StaticClass.normal_update(timeunit=timeunit, timevalue=timevalue)
+
+    return message
+
 if __name__ == '__main__':
 
-    server.run('127.0.0.1',8083,debug=True)
+    server.run('127.0.0.1', 8083, debug=True)
