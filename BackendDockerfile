@@ -1,0 +1,23 @@
+FROM python:3.9-slim
+
+RUN mv /etc/apt/sources.list.d /etc/apt/sources.list.d.bak
+ADD ./apt_environments/sources.list.d/ /etc/apt/sources.list.d/
+ADD ./apt_environments/keyrings /usr/share/keyrings/
+
+RUN apt update \
+    && apt install -y tzdata vim gcc
+
+ENV DB_PATH=/app/dbs
+ENV TZ=Asia/Shanghai
+
+ADD ./webui/backend /app/webui/backend
+ADD ./basetools /app/basetools
+WORKDIR /app/webui/backend
+
+RUN mkdir -p logs stats
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
+
+ENV IS_DOCKER=True
+
+# CMD ["python3", "data_collector.py", "-p", $PLATFORM, "-r", $ROOM_ID, "-g", $ACCEPT_GIFT]    # TODO: 这一行含变量使用JSON会报错，不适用会报warning
+CMD uwsgi config.ini

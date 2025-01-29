@@ -5,43 +5,16 @@ import flask
 import os 
 import time
 import json
-from flask import request,redirect, abort, jsonify
-from wsgiref.simple_server import make_server
+from flask import request, redirect, abort, jsonify
 
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from tools.data_filter import GenStats
 
-def ip_user():     # 获取访问者的ip以及useragent，判断是否在ban的范围之内，如果是返回值为0，后面会禁止访问
-    with open(".banned_ip") as f:
-        ip_lines = f.readlines()
-    ip_ban = [i.split("\n")[0] for i in ip_lines]
-    agent_ban = ["python-requests","Python-urllib","Go-http-client"]
-
-    ip_add = request.remote_addr
-    user_a = request.headers.get("User-Agent")
-
-    if (ip_add in ip_ban):
-        return 0
-    else:
-        for single_user in agent_ban:
-            if single_user in user_a:
-                return 0
-        return 1
-
-def allow_f(filename):
-    all_list = ['png','jpg','jpeg','docx','doc','xls','xlsx','ppt','pptx','pdf','html','py','c','zip','']
-    file_type = filename.split('.')[-1]
-    if file_type in all_list:
-        return 1
-    else:
-        return 1
-
-
 interface_path = os.path.dirname(__file__)
 sys.path.insert(0, interface_path)
-server = flask.Flask(__name__,static_url_path='',static_folder='static',template_folder='template')
+server = flask.Flask(__name__,static_url_path='',static_folder='static', template_folder='template')
 
 # limiter = Limiter(
 # server,
@@ -52,39 +25,13 @@ server = flask.Flask(__name__,static_url_path='',static_folder='static',template
 
 @server.errorhandler(404)    # 重定向404界面
 def demo4(e):
-    # ip_toban = request.remote_addr
-    # with open(".banned_ip","a+") as f:
-    #     f.seek(0)
-    #     alban = f.readlines()
-    #     if f"{ip_toban}\n" in alban:
-    #         pass
-    #     else:
-    #         f.seek(0)
-    #         f.write(f"{ip_toban}\n")
     return "404 ERROR!"
-
-@server.errorhandler(429)    # 短时间内访问此数过多会重定向至429界面，然后加入黑名单
-def demo429(e):
-    ip_toban = request.remote_addr
-    with open(".banned_ip","a+") as f:
-        f.seek(0)
-        alban = f.readlines()
-        if f"{ip_toban}\n" in alban:
-            pass
-        else:
-            f.seek(0)
-            f.write(f"{ip_toban}\n")
-    
-    return redirect("https://bing.com")
 
 @server.route('/', methods=["GET"])
 def index():
-    check = ip_user()
-    if check == 1:
-        with open("static/index.html") as f:
-            return "".join(f.readlines())
-    else:
-        abort(404)
+    with open("static/index.html") as f:
+        return "".join(f.readlines())
+
 
 @server.route("/check", methods=["POST"])
 def check_room_exist():
@@ -106,11 +53,19 @@ def time_mes():
     timeunit = request.json.get('timeunit')
     timevalue = request.json.get('timevalue')
 
-    StaticClass = GenStats(platform, room_id)
+    try:
+        StaticClass = GenStats(platform, room_id)
+        message = StaticClass.normal_update(timeunit=timeunit, timevalue=timevalue)
 
-    message = StaticClass.normal_update(timeunit=timeunit, timevalue=timevalue)
+        return message
+    
+    except FileExistsError:
+        return jsonify({"data_status": "Live Room not Exist."})
+    
+    except ValueError:
+        return jsonify({"data_status": "No Avail Data in This Time Range."})
 
-    return message
+
 
 if __name__ == '__main__':
 

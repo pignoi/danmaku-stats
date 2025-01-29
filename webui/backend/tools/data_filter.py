@@ -20,15 +20,15 @@ class GenStats:
 
         self.static_data = pd.DataFrame()
         
+        self.rood_db = LiveDatabase(platform, room_id, collect_mode=False)
+
         # first check
         if Path(self.update_json).exists() == False:
-            last_update_time = {"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "1hours": "","history":""}
+            last_update_time = {"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "600minutes": "","history":""}
             with open(self.update_json, "a+") as f:
                 f.write(json.dumps(last_update_time))
-        
+
         Path(f"stats/{self.update_index}").mkdir(exist_ok=True)
-       
-        self.rood_db = LiveDatabase(platform, room_id, collect_mode=False)
 
     def get_by_time(self, **kwargs):
         """可用的时间参数: 
@@ -56,7 +56,7 @@ class GenStats:
         plot_top: 统计结果中希望表现出的个数
         """
         if self.static_data.empty:
-            raise ValueError("please run get data method first.")
+            raise ValueError("Data is Empty.")
         else:
             data = self.static_data
 
@@ -73,26 +73,28 @@ class GenStats:
         counts_sorted = counts_pdf["count"]
 
         # 前n名弹幕画图
-        danmaku_topn = danmaku_sorted[0: plot_top]
-        count_topn = danmaku_counts[0: plot_top]
-        for num, i in enumerate(danmaku_topn):    # 处理b站表情包的长链接
-            if "http://i0.hdslb.com" in i:
-                mes_list = i.split('(')[:-1]
-                danmaku_topn[num] = f"{'('.join(mes_list)}(表情包)"
+        # danmaku_topn = danmaku_sorted[0: plot_top]
+        # count_topn = danmaku_counts[0: plot_top]
+        # plot_top = count_topn.shape[0]
+        # for num, i in enumerate(danmaku_topn):    # 处理b站表情包的长链接
+        #     if "http://i0.hdslb.com" in i:
+        #         mes_list = i.split('(')[:-1]
+        #         danmaku_topn[num] = f"{'('.join(mes_list)}(表情包)"
         
-        normal_style()
-        plot_labels = ['\n'.join(wrap(i, width=12)) for i in danmaku_topn[::-1]]
-        plot_values = count_topn[::-1]
+        # normal_style()
+        # plot_labels = ['\n'.join(wrap(i, width=12)) for i in danmaku_topn[::-1]]
+        # plot_values = count_topn[::-1]
         
-        fig, ax = plt.subplots()
-        for y, x in enumerate(plot_values):
-            ax.text(x - 0.1, y, str(x), va='center', ha="right", fontsize=10)  # 数值标签位置
-        ax.barh(plot_labels, plot_values, color='skyblue')
+        fig = None
+        # fig, ax = plt.subplots()
+        # for y, x in enumerate(plot_values):
+        #     ax.text(x - 0.1, y, str(x), va='center', ha="right", fontsize=10)  # 数值标签位置
+        # ax.barh(plot_labels, plot_values, color='skyblue')
         
-        ax.set_yticks(range(plot_top))  # 确保刻度位置与标签对应
-        ax.set_yticklabels(plot_labels, rotation=30, fontsize=int(80/plot_top))  # 旋转一定角度，水平对齐为右
+        # ax.set_yticks(range(plot_top))  # 确保刻度位置与标签对应
+        # ax.set_yticklabels(plot_labels, rotation=30, fontsize=int(80/plot_top))  # 旋转一定角度，水平对齐为右
 
-        return {"fig":fig, "origin_data":{"danmakus":danmaku_sorted, "counts":counts_sorted}}
+        return {"fig":fig, "origin_data":{"danmakus":danmaku_sorted.to_list(), "counts":counts_sorted.to_list()}}
             
     def dynamic_update(self, update_interval:int):
         # 该方法在后续的完善的统计历史中可能会用到，但是目前的更新方式暂时不需要用到此方法
@@ -146,9 +148,9 @@ class GenStats:
             
             # 此处保存的手段是直接覆盖之前的结果，因为更新不是实时的，所以保留历史记录也没太大意义
             with open(f"stats/{self.update_index}/origin_data_{timevalue}{timeunit}.json", "w+") as ff:
-                ff.write(json.dump(new_results["origin_data"]))
+                ff.write(json.dumps(new_results["origin_data"]))
 
-            new_results["fig"].savefig(f"stats/{self.update_index}/fig_{timevalue}{timeunit}.png")
+            # new_results["fig"].savefig(f"stats/{self.update_index}/fig_{timevalue}{timeunit}.png")
 
             with open(self.update_json, "w+") as fff:
                 fff.write(json.dumps(interval_dict))
@@ -157,6 +159,9 @@ class GenStats:
         with open(f"stats/{self.update_index}/origin_data_{timevalue}{timeunit}.json") as f4:
             message = json.load(f4)
         
-        all_message = {"origin_data":message, "fig":f"stats/{self.update_index}/fig_{timevalue}{timeunit}.png"}
+        all_message = {"data_status":"Full Pass.",
+                       "origin_data":message, 
+                       "last_update":last_update.strftime("%Y-%m-%d %H:%M:%S"), 
+                       "fig":f"stats/{self.update_index}/fig_{timevalue}{timeunit}.png"}
 
         return all_message

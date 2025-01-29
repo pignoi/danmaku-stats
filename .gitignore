@@ -7,4 +7,4 @@ webui/backend/configs/*update.json
 webui/backend/stats/*
 
 **/__pycache__
-sources.list.d/
+apt_environments/
