@@ -12,7 +12,11 @@ class LiveDatabase:
 
         plat_dict = {"bilibili":"bili", "douyu":"douyu"}
 
-        path_to_db = f"{os.environ.get('DB_PATH')}/{plat_dict[platform]}_{room_id}.db"
+        try:
+            path_to_db = f"{os.environ.get('DB_PATH')}/{plat_dict[platform]}_{room_id}.db"
+        except KeyError:
+            raise FileExistsError(f"Platform {platform} Do Not Exist.")
+    
         # 在 collect_mode==False 的情况下需要路径下存在对应的数据库再执行后续任务，否则就不会执行
         if (collect_mode == False and Path(path_to_db).exists() == True) or (collect_mode == True):
             self.conn = sqlite3.connect(path_to_db, check_same_thread=False)

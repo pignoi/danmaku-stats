@@ -14,7 +14,7 @@ ADD ./webui/backend /app/webui/backend
 ADD ./basetools /app/basetools
 WORKDIR /app/webui/backend
 
-RUN mkdir -p logs stats
+RUN mkdir -p logs stats configs
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
 
 ENV IS_DOCKER=True

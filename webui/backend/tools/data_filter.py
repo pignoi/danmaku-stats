@@ -141,7 +141,7 @@ class GenStats:
         
         now_interval = now_time - last_update
 
-        if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})"):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
+        if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=10):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
             eval(f"self.get_by_time({timeunit}={timevalue})")
             new_results = self.context_static(normalize=False, plot_top=20)
             interval_dict[f"{timevalue}{timeunit}"] = now_time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -154,6 +154,8 @@ class GenStats:
 
             with open(self.update_json, "w+") as fff:
                 fff.write(json.dumps(interval_dict))
+            
+            last_update = now_time
         
         # 汇总最终的信息
         with open(f"stats/{self.update_index}/origin_data_{timevalue}{timeunit}.json") as f4:

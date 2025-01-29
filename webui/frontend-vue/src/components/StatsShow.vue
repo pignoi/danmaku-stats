@@ -128,7 +128,7 @@ export default {
       };
 
       try {
-        const response = await axios.post('api/get_by_time', data);
+        const response = await axios.post('https://media.axuan.wang/get_by_time', data);
         
         if (response.data["data_status"] === "Full Pass."){
           const names = response.data["origin_data"]["danmakus"];
@@ -189,6 +189,7 @@ export default {
   },
   mounted() {
     // 初始化时加载数据
+    document.title = this.platform+" "+this.room_id+" "+"弹幕统计";
     this.fetchData();
   },
 };

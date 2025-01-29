@@ -1,6 +1,6 @@
 userinfo.json
 dbs/*
-origin_data/
+playground/
 **/*test*
 
 webui/backend/configs/*update.json
