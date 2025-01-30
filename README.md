@@ -1,4 +1,5 @@
 <p align="center">
+    <img src="https://media.axuan.wang/favicon.png" width="150" height="150"/>
     <h3 align="center">stats.axuan.wang</h3>
     <p align="center">
         <a href="https://github.com/pignoi/danmaku-stats"><img src="https://img.shields.io/github/languages/code-size/pignoi/danmaku-stats?color=blueviolet"></a>

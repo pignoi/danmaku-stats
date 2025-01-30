@@ -1,5 +1,23 @@
 <template>
   <div class="container">
+    <!-- 右上角导航栏 -->
+    <div class="navbar">
+      <a href="https://github.com/pignoi/danmaku-stats" target="_blank" class="nav-link">
+        <img src="https://media.axuan.wang/github.png" class="sponsor-img" />
+      </a>
+      <a href="#" class="nav-link" @click="showSponsorModal = true">
+        <img src="https://media.axuan.wang/sponsor.png" alt="赞助" class="sponsor-img" />
+      </a>
+    </div>
+
+    <!-- 赞助弹框 -->
+    <div v-if="showSponsorModal" class="modal-overlay" @click="showSponsorModal = false">
+      <div class="modal-content" @click.stop>
+        <img src="https://media.axuan.wang/skm.png" alt="赞助方式" class="sponsor-image" />
+        <button class="close-button" @click="showSponsorModal = false">关闭</button>
+      </div>
+    </div>
+
     <!-- 上部 15%：时间尺度、时间单位和确定按钮 -->
     <div class="top-section">
       <div class="form">
@@ -40,7 +58,6 @@
 
     <!-- 下部 85%：结果表格 -->
     <div class="bottom-section">
-
       <div v-if="tableData.length > 0" class="table-container">
         <table>
           <thead>
@@ -87,6 +104,7 @@ export default {
       tableData: [], // 全部表格数据
       currentPage: 1, // 当前页码
       itemsPerPage: 15, // 每页显示的数据条数
+      showSponsorModal: false
     };
   },
   computed: {
@@ -207,6 +225,33 @@ body, html {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  position: relative; /* 为导航栏定位 */
+}
+
+/* 右上角导航栏 */
+.navbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
+.sponsor-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
 }
 
 /* 上部 15%：时间尺度、时间单位和确定按钮 */
@@ -216,7 +261,6 @@ body, html {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  /* background-color: #f5f5f5; */
   border-bottom: 1px solid #ccc;
   padding: 10px;
 }
@@ -314,4 +358,47 @@ th {
   background-color: #ccc;
   cursor: not-allowed;
 }
+
+/* 赞助弹框 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  position: relative;
+}
+
+.sponsor-image {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 8px;
+}
+
+.close-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  background-color: #0056b3;
+}
+
 </style>
