@@ -1,9 +1,14 @@
 from bilibili_api import live, sync, user
 from bilibili_api import Credential
 from basetools.db_manager import LiveDatabase
+
 import json
 import os
 import datetime
+import logging
+
+logging.basicConfig(level=logging.INFO, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class BiliDanmaku:
     def __init__(self, room_id, accept_gift:bool=False):
@@ -21,26 +26,35 @@ class BiliDanmaku:
         async def on_danmaku(event):
             # 收到弹幕
             baseinfo = event["data"]["info"]
-            
-            username = baseinfo[0][15]["user"]["base"]["name"]
-            uid = baseinfo[0][15]["user"]["uid"]
-
-            # 检测是否为直播间表情弹幕
-            if baseinfo[0][12] == 1:
-                image_url = baseinfo[0][13]["url"]
-                content = json.loads(baseinfo[0][15]["extra"])["content"] + f"({image_url})"
-            else:
-                content = json.loads(baseinfo[0][15]["extra"])["content"]
-            
-            origin_time = float(f"{baseinfo[0][4]/1000:.3f}")
-            std_time = datetime.datetime.strftime(datetime.datetime.fromtimestamp(origin_time), '%Y-%m-%d %H:%M:%S')
-            
             try:
-                fans_club = baseinfo[3][1]
-                fans_level = baseinfo[3][0]
-            except IndexError:
-                fans_club = "无"
-                fans_level = 0
+                username = baseinfo[0][15]["user"]["base"]["name"]
+                uid = baseinfo[0][15]["user"]["uid"]
+
+                # 检测是否为直播间表情弹幕
+                if baseinfo[0][12] == 1:
+                    image_url = baseinfo[0][13]["url"]
+                    content = json.loads(baseinfo[0][15]["extra"])["content"] + f"({image_url})"
+                else:
+                    content = json.loads(baseinfo[0][15]["extra"])["content"]
+                
+                origin_time = float(f"{baseinfo[0][4]/1000:.3f}")
+                std_time = datetime.datetime.strftime(datetime.datetime.fromtimestamp(origin_time), '%Y-%m-%d %H:%M:%S')
+                
+                try:
+                    fans_club = baseinfo[3][1]
+                    fans_level = baseinfo[3][0]
+                except IndexError:
+                    fans_club = "无"
+                    fans_level = 0
+            
+            except TypeError:
+                logging.info("TypeError raised.")
+                std_time = "In error"
+                username = "In error"
+                content = "In error"
+                uid = "In error"
+                fans_club = "In error"
+                fans_level = "In error"
 
             room_db.insert("danmaku", (std_time, username, content, uid, fans_club, fans_level))
         

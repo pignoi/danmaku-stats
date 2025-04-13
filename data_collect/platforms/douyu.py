@@ -8,7 +8,8 @@ from basetools.db_manager import LiveDatabase
 import datetime
 import logging
 
-logging.basicConfig(level="INFO")
+logging.basicConfig(level=logging.INFO, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class DouyuDanmaku:
     def __init__(self, roomid, accept_gift:bool=False):

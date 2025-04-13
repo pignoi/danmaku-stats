@@ -19,39 +19,42 @@ class LiveDatabase:
     
         # 在 collect_mode==False 的情况下需要路径下存在对应的数据库再执行后续任务，否则就不会执行
         if (collect_mode == False and Path(path_to_db).exists() == True) or (collect_mode == True):
-            self.conn = sqlite3.connect(path_to_db, check_same_thread=False)
-            self.cur = self.conn.cursor()
+            # 如果不是收集模式，在连接数据库的时候要以只读模式打开，防止和写入过程的连接产生冲突
+            if collect_mode == False:
+                self.conn = sqlite3.connect(path_to_db, check_same_thread=False, uri=True, read_only=True)
+                self.cur = self.conn.cursor()
 
-            # 目前支持的类型：弹幕，SC(B站限定)，礼物，TBC
-            # 弹幕数据量很大，不再保留原始信息，为了未来的用户画像分析需要保留用户uid。剩下的数据量较小可以保留原始信息。
-            self.table_names = self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()
-            
-            if (("danmaku",) in self.table_names) == False:
-                self.cur.execute(f"""CREATE TABLE IF NOT EXISTS danmaku (
-                time DATETIME, username TEXT, context TEXT,
-                uid TEXT,
-                fans_club TEXT, fans_level TEXT
-                )""")
-            self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
-            
-            if (("super_chat",) in self.table_names) == False and platform == "bilibili":
-                self.cur.execute(f"""CREATE TABLE IF NOT EXISTS super_chat (
-                time DATETIME, username TEXT, context TEXT,
-                price INT, keep_time INT,
-                fans_club TEXT, fans_level TEXT,
-                origin_data TEXT
-                )""")
-            self.sc_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
+                self.table_names = self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()
 
-            if (("gifts",) in self.table_names) == False:
-                self.cur.execute(f"""CREATE TABLE IF NOT EXISTS gifts (
-                time DATETIME, username TEXT, context TEXT,
-                price INT,
-                fans_club TEXT, fans_level TEXT,
-                origin_data TEXT
-                )""")
+            elif collect_mode == True:
+                self.conn = sqlite3.connect(path_to_db, check_same_thread=False)
+                self.cur = self.conn.cursor()
+                # 目前支持的类型：弹幕，SC(B站限定)，礼物，TBC
+                # 弹幕数据量很大，不再保留原始信息，为了未来的用户画像分析需要保留用户uid。剩下的数据量较小可以保留原始信息。
+                if (("danmaku",) in self.table_names) == False:
+                    self.cur.execute(f"""CREATE TABLE IF NOT EXISTS danmaku (
+                    time DATETIME, username TEXT, context TEXT,
+                    uid TEXT,
+                    fans_club TEXT, fans_level TEXT
+                    )""")
+                self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
+                
+                if (("super_chat",) in self.table_names) == False and platform == "bilibili":
+                    self.cur.execute(f"""CREATE TABLE IF NOT EXISTS super_chat (
+                    time DATETIME, username TEXT, context TEXT,
+                    price INT, keep_time INT,
+                    fans_club TEXT, fans_level TEXT,
+                    origin_data TEXT
+                    )""")
+                self.sc_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
 
-            if collect_mode == True:
+                if (("gifts",) in self.table_names) == False:
+                    self.cur.execute(f"""CREATE TABLE IF NOT EXISTS gifts (
+                    time DATETIME, username TEXT, context TEXT,
+                    price INT,
+                    fans_club TEXT, fans_level TEXT,
+                    origin_data TEXT
+                    )""")
 
                 try:
                     self.drop_interval = float(os.environ["DB_DROP_INTERVAL"])
