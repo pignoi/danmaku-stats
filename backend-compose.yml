@@ -2,7 +2,7 @@ services:
   backend:
     container_name: backend
     user: 1000:1000
-    image: pignoi/danmaku_backend:v0.1.0
+    image: pignoi/danmaku_backend:v0.1.2
     tty: true
     stdin_open: true
     restart: "unless-stopped"
@@ -10,6 +10,7 @@ services:
       - "127.0.0.1:8083:8083"
     environment:
       - TZ="Asia/Shanghai"
+      - APP_ENV=DEVELOPMENT
     volumes:
       - ./playground/dbs/:/app/dbs
       - ./playground/backend/configs:/app/webui/backend/configs

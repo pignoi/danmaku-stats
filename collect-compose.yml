@@ -1,0 +1,28 @@
+services:
+  collect_6657:
+    container_name: collect_6657
+    image: pignoi/danmaku_collector:v0.1.4
+    tty: true
+    stdin_open: true
+    restart: "unless-stopped"
+    environment:
+      - PLATFORM=douyu
+      - ROOM_ID=6979222
+      - DB_DROP_INTERVAL=5
+    volumes:
+      - ./dbs/:/app/dbs
+      - ./userinfo.json:/app/userinfo.json
+
+  collect_zc:
+    container_name: collect_zc
+    image: pignoi/danmaku_collector:v0.1.4
+    tty: true
+    stdin_open: true
+    restart: "unless-stopped"
+    environment:
+      - PLATFORM=bilibili
+      - ROOM_ID=3044248
+      - DB_DROP_INTERVAL=5
+    volumes:
+      - ./dbs/:/app/dbs
+      - ./userinfo.json:/app/userinfo.json

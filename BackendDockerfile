@@ -9,6 +9,7 @@ RUN apt update \
 
 ENV DB_PATH=/app/dbs
 ENV TZ=Asia/Shanghai
+ENV APP_ENV=PRODUCTION
 
 ADD ./webui/backend /app/webui/backend
 ADD ./basetools /app/basetools
@@ -20,4 +21,4 @@ RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r re
 ENV IS_DOCKER=True
 
 # CMD ["python3", "data_collector.py", "-p", $PLATFORM, "-r", $ROOM_ID, "-g", $ACCEPT_GIFT]    # TODO: 这一行含变量使用JSON会报错，不适用会报warning
-CMD uwsgi config.ini
+CMD ["bash", "run.sh"]

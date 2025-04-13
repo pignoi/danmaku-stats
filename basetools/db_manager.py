@@ -21,7 +21,8 @@ class LiveDatabase:
         if (collect_mode == False and Path(path_to_db).exists() == True) or (collect_mode == True):
             # 如果不是收集模式，在连接数据库的时候要以只读模式打开，防止和写入过程的连接产生冲突
             if collect_mode == False:
-                self.conn = sqlite3.connect(path_to_db, check_same_thread=False, uri=True, read_only=True)
+                file_uri = f"file:{path_to_db}?mode=ro"
+                self.conn = sqlite3.connect(file_uri, check_same_thread=False, uri=True)
                 self.cur = self.conn.cursor()
 
                 self.table_names = self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()
@@ -31,13 +32,14 @@ class LiveDatabase:
                 self.cur = self.conn.cursor()
                 # 目前支持的类型：弹幕，SC(B站限定)，礼物，TBC
                 # 弹幕数据量很大，不再保留原始信息，为了未来的用户画像分析需要保留用户uid。剩下的数据量较小可以保留原始信息。
+                self.table_names = self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()
+                
                 if (("danmaku",) in self.table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS danmaku (
                     time DATETIME, username TEXT, context TEXT,
                     uid TEXT,
                     fans_club TEXT, fans_level TEXT
-                    )""")
-                self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
+                    )""")                
                 
                 if (("super_chat",) in self.table_names) == False and platform == "bilibili":
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS super_chat (
@@ -45,8 +47,7 @@ class LiveDatabase:
                     price INT, keep_time INT,
                     fans_club TEXT, fans_level TEXT,
                     origin_data TEXT
-                    )""")
-                self.sc_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
+                    )""")                
 
                 if (("gifts",) in self.table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS gifts (
@@ -69,7 +70,10 @@ class LiveDatabase:
                 monitor_thread = threading.Thread(target=self.monitor_danmaku)
                 monitor_thread.setDaemon(True)
                 monitor_thread.start()
-        
+
+            self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
+            self.sc_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
+
         elif (collect_mode == False and Path(path_to_db).exists() == False):
             raise FileExistsError(f"Collect Mode is False but {path_to_db} do Not Exist.")
     

@@ -1,10 +1,11 @@
 FROM python:3.9-slim
 
 RUN mv /etc/apt/sources.list.d /etc/apt/sources.list.d.bak
-ADD sources.list.d/ /etc/apt/
+ADD ./apt_environments/sources.list.d/ /etc/apt/sources.list.d/
+ADD ./apt_environments/keyrings /usr/share/keyrings/
 
 RUN apt update \
-    && apt install -y tzdata \
+    && apt install -y tzdata gcc vim \
     && rm -rf /var/lib/apt/lists/*
 
 ENV DB_PATH=/app/dbs
