@@ -2,7 +2,7 @@ services:
   backend:
     container_name: backend
     user: 1000:1000
-    image: pignoi/danmaku_backend:v0.1.2
+    image: pignoi/danmaku_backend:v0.2.0
     tty: true
     stdin_open: true
     restart: "unless-stopped"
@@ -16,4 +16,4 @@ services:
       - ./playground/backend/configs:/app/webui/backend/configs
       - ./playground/backend/logs:/app/webui/backend/logs
       - ./playground/backend/stats:/app/webui/backend/stats
-      # - ./playground/backend/static:/app/webui/backend/static
+      - ./playground/backend/static:/app/webui/backend/static

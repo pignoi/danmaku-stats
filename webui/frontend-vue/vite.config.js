@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://media.axuan.wang',
+        target: 'http://127.0.0.1:8084',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

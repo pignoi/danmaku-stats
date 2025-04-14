@@ -50,12 +50,14 @@ def check_room_exist():
 def time_mes():
     platform = request.json.get('platform')
     room_id = request.json.get('room_id')
+    update_info_name = request.json.get('info_name')
     timeunit = request.json.get('timeunit')
     timevalue = request.json.get('timevalue')
+    info_count = request.json.get('info_count')
 
     try:
         StaticClass = GenStats(platform, room_id)
-        message = StaticClass.normal_update(timeunit=timeunit, timevalue=timevalue)
+        message = StaticClass.normal_update(update_info_name=update_info_name, timeunit=timeunit, timevalue=timevalue, info_count=info_count)
 
         return message
     
@@ -64,8 +66,6 @@ def time_mes():
     
     except ValueError:
         return jsonify({"data_status": "No Avail Data in This Time Range."})
-
-
 
 if __name__ == '__main__':
 

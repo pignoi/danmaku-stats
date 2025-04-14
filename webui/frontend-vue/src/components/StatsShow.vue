@@ -28,21 +28,33 @@
           <div class="form-group">
             <label>房间号: {{ room_id }}</label>
           </div>
+          
           <div class="form-group">
-            <label for="timeLength">统计时长:</label>
+            <label for="timeLength">类型:</label>
+            <select id="timeLength" v-model="selectedInfoName">
+              <option v-for="option in infoNameOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="timeLength">时长:</label>
             <select id="timeLength" v-model="selectedTimeLength">
               <option v-for="option in timeOptions" :key="option" :value="option">
                 {{ option }}
               </option>
             </select>
           </div>
+          
           <div class="form-group">
-            <label for="timeUnit">时间单位:</label>
+            <label for="timeUnit">单位:</label>
             <select id="timeUnit" v-model="selectedTimeUnit">
               <option value="minutes">分钟</option>
               <option value="seconds">秒</option>
             </select>
           </div>
+          
           <div class="form-group">
             <button @click="fetchData">确定</button>
           </div>
@@ -62,7 +74,7 @@
         <table>
           <thead>
             <tr>
-              <th>弹幕</th>
+              <th>{{selectedInfoName}}</th>
               <th>次数</th>
               <th>操作</th>
             </tr>
@@ -98,13 +110,19 @@ export default {
       infoLabel: "",    // 初始的信息显示框
       platform: this.$route.query.platform, // 从路由参数中获取平台
       room_id: this.$route.query.room_id, // 从路由参数中获取房间号码
+      selectedInfoName: "弹幕",
       selectedTimeUnit: 'minutes', // 默认时间单位
       selectedTimeLength: 1, // 默认时间长度
+      infoNameOptions: ["弹幕","用户id"],
       timeOptions: [1, 2, 5, 30, 600], // 默认时间选项（分钟）
       tableData: [], // 全部表格数据
       currentPage: 1, // 当前页码
       itemsPerPage: 15, // 每页显示的数据条数
-      showSponsorModal: false
+      showSponsorModal: false,
+      infoNameDict:{
+        "弹幕": "danmaku",
+        "用户id": "username"
+      }
     };
   },
   computed: {
@@ -134,6 +152,9 @@ export default {
     selectedTimeLength() {
       this.fetchData(); // 自动更新数据
     },
+    selectedInfoName() {
+      this.fetchData(); // 自动更新数据
+    },
   },
   methods: {
     // 获取数据
@@ -141,15 +162,18 @@ export default {
       const data = {
         platform: this.platform,
         room_id: this.room_id,
+        info_name: this.infoNameDict[this.selectedInfoName],
         timeunit: this.selectedTimeUnit,
         timevalue: this.selectedTimeLength,
+        info_count:100,
       };
 
       try {
+        this.infoLabel = "正在更新，请不要重复点击~";
         const response = await axios.post('https://media.axuan.wang/get_by_time', data);
         
         if (response.data["data_status"] === "Full Pass."){
-          const names = response.data["origin_data"]["danmakus"];
+          const names = response.data["origin_data"]["showinfos"];
           const values = response.data["origin_data"]["counts"];
           const last_update = response.data["last_update"];
 
