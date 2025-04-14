@@ -22,16 +22,17 @@
     <div class="top-section">
       <div class="form">
         <div class="form-row">
-          <div class="form-group">
+          
+          <div class="form-info">
             <label>平台: {{ platform }}</label>
           </div>
-          <div class="form-group">
+          <div class="form-info">
             <label>房间号: {{ room_id }}</label>
           </div>
           
           <div class="form-group">
             <label for="timeLength">类型:</label>
-            <select id="timeLength" v-model="selectedInfoName">
+            <select class="top-select" id="timeLength" v-model="selectedInfoName">
               <option v-for="option in infoNameOptions" :key="option" :value="option">
                 {{ option }}
               </option>
@@ -40,7 +41,7 @@
           
           <div class="form-group">
             <label for="timeLength">时长:</label>
-            <select id="timeLength" v-model="selectedTimeLength">
+            <select class="top-select" id="timeLength" v-model="selectedTimeLength">
               <option v-for="option in timeOptions" :key="option" :value="option">
                 {{ option }}
               </option>
@@ -49,7 +50,7 @@
           
           <div class="form-group">
             <label for="timeUnit">单位:</label>
-            <select id="timeUnit" v-model="selectedTimeUnit">
+            <select class="top-select" id="timeUnit" v-model="selectedTimeUnit">
               <option value="minutes">分钟</option>
               <option value="seconds">秒</option>
             </select>
@@ -117,7 +118,7 @@ export default {
       timeOptions: [1, 2, 5, 30, 600], // 默认时间选项（分钟）
       tableData: [], // 全部表格数据
       currentPage: 1, // 当前页码
-      itemsPerPage: 15, // 每页显示的数据条数
+      itemsPerPage: 10, // 每页显示的数据条数
       showSponsorModal: false,
       infoNameDict:{
         "弹幕": "danmaku",
@@ -238,6 +239,7 @@ export default {
 </script>
 
 <style>
+
 /* 全局样式 */
 body, html {
   margin: 0;
@@ -302,14 +304,25 @@ body, html {
 
 .form-row {
   display: flex;
-  gap: 20px;
+  gap: 5px;
   align-items: center;
+}
+
+.form-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .form-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
+}
+
+.top-select {
+  width: 120px;
+  height: 35px;
 }
 
 label {
@@ -423,6 +436,35 @@ th {
 
 .close-button:hover {
   background-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+.top-section {
+  height: 22%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  padding: 10px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+
+.form-info {
+  display: none;
+}
+
+.bottom-section {
+  height: 78%;
+  padding: 20px;
+  overflow-y: auto; /* 允许滚动 */
+}
 }
 
 </style>

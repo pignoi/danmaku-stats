@@ -253,7 +253,7 @@ class GenStats:
 
             # new_results["fig"].savefig(f"stats/{self.update_room_name}/fig_{timevalue}{timeunit}.png")
 
-            with open(self.update_room_name, "w+") as fff:
+            with open(self.update_json_file, "w+") as fff:
                 fff.write(json.dumps(interval_dict))
             
             last_update = now_time
