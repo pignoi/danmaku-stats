@@ -16,3 +16,4 @@ services:
       - ./playground/backend/configs:/app/webui/backend/configs
       - ./playground/backend/logs:/app/webui/backend/logs
       - ./playground/backend/stats:/app/webui/backend/stats
+      # - ./playground/backend/static:/app/webui/backend/static

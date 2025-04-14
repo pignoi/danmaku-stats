@@ -29,9 +29,9 @@ def demo4(e):
 
 @server.route('/', methods=["GET"])
 def index():
-    with open("static/index.html") as f:
-        return "".join(f.readlines())
-
+    # with open("static/index.html") as f:
+    #     return "".join(f.readlines())
+    return "<h1> This is the api of danmaku project</h1>"
 
 @server.route("/check", methods=["POST"])
 def check_room_exist():
