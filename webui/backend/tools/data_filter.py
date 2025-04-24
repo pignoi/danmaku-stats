@@ -144,21 +144,24 @@ class GenStats:
         to_send_counts = counts_sorted.to_list()[:send_count]
 
         # 对用户名进行部分打码处理
-        for list_index, username in enumerate(to_send_usernames):
-            username_length = len(username)
-            username_str_list = [i for i in username]
-            
-            # 将第一个字符和最后一个字符打码
-            username_str_list[0] = "*"
-            username_str_list[-1] = "*"
+        username_mask = True
+        
+        if username_mask == True:
+            for list_index, username in enumerate(to_send_usernames):
+                username_length = len(username)
+                username_str_list = [i for i in username]
+                
+                # 将第一个字符和最后一个字符打码
+                username_str_list[0] = "*"
+                username_str_list[-1] = "*"
 
-            # 如果用户名称总数大于5，则将其中间的一个字符也打码
-            if username_length > 5:
-                mid_index = int(username_length/2)
-                username_str_list[mid_index] = "*"
-            
-            final_username = "".join(username_str_list)
-            to_send_usernames[list_index] = final_username
+                # 如果用户名称总数大于5，则将其中间的一个字符也打码
+                if username_length > 5:
+                    mid_index = int(username_length/2)
+                    username_str_list[mid_index] = "*"
+                
+                final_username = "".join(username_str_list)
+                to_send_usernames[list_index] = final_username
 
         # 前n名弹幕画图
         # danmaku_topn = danmaku_sorted[0: plot_top]

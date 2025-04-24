@@ -1,7 +1,6 @@
 services:
   backend:
     container_name: backend
-    user: 1000:1000
     image: pignoi/danmaku_backend:v0.2.1
     tty: true
     stdin_open: true

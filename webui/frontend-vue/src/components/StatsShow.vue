@@ -321,7 +321,7 @@ body, html {
 }
 
 .top-select {
-  width: 120px;
+  width: 80px;
   height: 35px;
 }
 
@@ -329,17 +329,14 @@ label {
   font-weight: bold;
 }
 
-select,
 button {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-}
-
-button {
   background-color: #007bff;
   color: white;
   cursor: pointer;
+  width: 60px;
 }
 
 button:hover {
