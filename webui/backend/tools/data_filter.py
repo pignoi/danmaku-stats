@@ -40,9 +40,8 @@ class GenStats:
             with open(self.update_json_file) as rf:
                 last_update_time = json.load(rf)
                 dict_keys = list(last_update_time.keys())
-                for info_name in self.avail_info:
-                    if info_name not in dict_keys:
-                        last_update_time[info_name] = update_times
+                if self.avail_info not in dict_keys:
+                    last_update_time[self.avail_info] = update_times
 
             with open(self.update_json_file, "w") as wf:
                 wf.write(json.dumps(last_update_time))

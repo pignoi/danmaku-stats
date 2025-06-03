@@ -1,4 +1,4 @@
-from data_filter import GenStats
+from .data_filter import GenStats
 
 class DesuwaStats(GenStats):
     def __init__(self, platform: str, room_id):
