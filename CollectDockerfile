@@ -16,6 +16,7 @@ ADD ./data_collect /app/data_collect
 ADD ./basetools /app/basetools
 WORKDIR /app/data_collect
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
+ADD ./live.json /usr/local/lib/python3.9/site-packages/bilibili_api/data/api/live.json
 
 ENV IS_DOCKER=True
 ENV DB_DROP_INTERVAL=5

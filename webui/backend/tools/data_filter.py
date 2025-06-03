@@ -1,3 +1,5 @@
+# 定义基本的统计方法，能够方便地访问数据库并返回便于后期处理的数值
+
 import datetime, time
 import threading
 import pandas as pd
@@ -13,24 +15,24 @@ from basetools.db_manager import LiveDatabase
 
 # 对相同一组数据库进行不同时间粒度以及角度的提取及分析，并生成对应的小文件供前端使用
 class GenStats:
-    def __init__(self, platform:str, room_id, ignore_words:list=["?","？","1"]):
+    def __init__(self, platform: str, 
+                 room_id, 
+                 avail_info: str, 
+                 update_times: dict = {"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "600minutes": "","history":""}):
         
         self.update_room_name = f"{platform}_{room_id}"
         self.update_json_file = f"configs/{self.update_room_name}_update.json"
         # 设置可以统计的变量名称
-        self.avail_info = ["danmaku", "username"]
+        self.avail_info = avail_info
 
         self.static_data = pd.DataFrame()
-        self.ignore_words = ignore_words
         
         self.rood_db = LiveDatabase(platform, room_id, collect_mode=False)
 
         # first check
+        last_update_time = {}
         if Path(self.update_json_file).exists() == False:
-            last_update_time = {
-                "danmaku":{"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "600minutes": "","history":""},
-                "username":{"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "600minutes": "","history":""}
-            }
+            last_update_time[self.avail_info] = update_times
             with open(self.update_json_file, "a+") as f:
                 f.write(json.dumps(last_update_time))
 
@@ -40,7 +42,7 @@ class GenStats:
                 dict_keys = list(last_update_time.keys())
                 for info_name in self.avail_info:
                     if info_name not in dict_keys:
-                        last_update_time[info_name] = {"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "600minutes": "","history":""}
+                        last_update_time[info_name] = update_times
 
             with open(self.update_json_file, "w") as wf:
                 wf.write(json.dumps(last_update_time))
@@ -48,7 +50,9 @@ class GenStats:
         Path(f"stats/{self.update_room_name}").mkdir(exist_ok=True)
 
     def get_by_time(self, **kwargs):
-        """可用的时间参数: 
+        """
+        获取原本的数据的函数，会返回对应时间范围的弹幕数据。
+        可用的时间参数: 
         days: float,
         seconds: float,
         microseconds: float,
@@ -64,129 +68,13 @@ class GenStats:
 
     def sort_by_arg(self, arg_name: str):
         pass
-
-    def context_static(self, normalize: bool=False, send_count:int=100, plot_top:int=10):
-
-        """
-        对弹幕的文本信息进行提取的函数。
-        normalize: 是否对数据进行百分比处理
-        ignore_words: 统计结果中不希望出现的词汇/关键词
-        plot_top: 统计结果中希望表现出的个数
-        """
-        if self.static_data.empty:
-            raise ValueError("Data is Empty.")
-        else:
-            data = self.static_data
-
-        danmaku_data = data["context"]
-        danmaku_data = danmaku_data[~danmaku_data.isin(self.ignore_words)]
-        
-        danmaku_counts = danmaku_data.value_counts(normalize=normalize)
-        # danmaku_percents = danmaku_counts.values / np.sum(danmaku_counts.values)
-        
-        counts_pdf = danmaku_counts.reset_index()
-        counts_pdf.columns = ['context', 'count']
-
-        danmaku_sorted = counts_pdf["context"]
-        counts_sorted = counts_pdf["count"]
-
-        to_send_danmakus = danmaku_sorted.to_list()[:send_count]
-        to_send_counts = counts_sorted.to_list()[:send_count]
-
-        # 前n名弹幕画图
-        # danmaku_topn = danmaku_sorted[0: plot_top]
-        # count_topn = danmaku_counts[0: plot_top]
-        # plot_top = count_topn.shape[0]
-        # for num, i in enumerate(danmaku_topn):    # 处理b站表情包的长链接
-        #     if "http://i0.hdslb.com" in i:
-        #         mes_list = i.split('(')[:-1]
-        #         danmaku_topn[num] = f"{'('.join(mes_list)}(表情包)"
-        
-        # normal_style()
-        # plot_labels = ['\n'.join(wrap(i, width=12)) for i in danmaku_topn[::-1]]
-        # plot_values = count_topn[::-1]
-        
-        fig = None
-        # fig, ax = plt.subplots()
-        # for y, x in enumerate(plot_values):
-        #     ax.text(x - 0.1, y, str(x), va='center', ha="right", fontsize=10)  # 数值标签位置
-        # ax.barh(plot_labels, plot_values, color='skyblue')
-        
-        # ax.set_yticks(range(plot_top))  # 确保刻度位置与标签对应
-        # ax.set_yticklabels(plot_labels, rotation=30, fontsize=int(80/plot_top))  # 旋转一定角度，水平对齐为右
-
-        return {"fig":fig, "origin_data":{"showinfos":to_send_danmakus, "counts":to_send_counts}}
-
-    def username_static(self, normalize: bool=False, send_count:int=100, plot_top:int=10):
-
-        """
-        对发送弹幕的用户id信息进行提取的函数。
-        normalize: 是否对数据进行百分比处理
-        plot_top: 统计结果中希望表现出的个数
-        """
-        if self.static_data.empty:
-            raise ValueError("Data is Empty.")
-        else:
-            data = self.static_data
-
-        username_data = data["username"]
-        
-        username_counts = username_data.value_counts(normalize=normalize)
-        # danmaku_percents = danmaku_counts.values / np.sum(danmaku_counts.values)
-        
-        counts_pdf = username_counts.reset_index()
-        counts_pdf.columns = ['context', 'count']
-
-        username_sorted = counts_pdf["context"]
-        counts_sorted = counts_pdf["count"]
-
-        to_send_usernames = username_sorted.to_list()[:send_count]
-        to_send_counts = counts_sorted.to_list()[:send_count]
-
-        # 对用户名进行部分打码处理
-        username_mask = True
-        
-        if username_mask == True:
-            for list_index, username in enumerate(to_send_usernames):
-                username_length = len(username)
-                username_str_list = [i for i in username]
-                
-                # 将第一个字符和最后一个字符打码
-                username_str_list[0] = "*"
-                username_str_list[-1] = "*"
-
-                # 如果用户名称总数大于5，则将其中间的一个字符也打码
-                if username_length > 5:
-                    mid_index = int(username_length/2)
-                    username_str_list[mid_index] = "*"
-                
-                final_username = "".join(username_str_list)
-                to_send_usernames[list_index] = final_username
-
-        # 前n名弹幕画图
-        # danmaku_topn = danmaku_sorted[0: plot_top]
-        # count_topn = danmaku_counts[0: plot_top]
-        # plot_top = count_topn.shape[0]
-        # for num, i in enumerate(danmaku_topn):    # 处理b站表情包的长链接
-        #     if "http://i0.hdslb.com" in i:
-        #         mes_list = i.split('(')[:-1]
-        #         danmaku_topn[num] = f"{'('.join(mes_list)}(表情包)"
-        
-        # normal_style()
-        # plot_labels = ['\n'.join(wrap(i, width=12)) for i in danmaku_topn[::-1]]
-        # plot_values = count_topn[::-1]
-        
-        fig = None
-        # fig, ax = plt.subplots()
-        # for y, x in enumerate(plot_values):
-        #     ax.text(x - 0.1, y, str(x), va='center', ha="right", fontsize=10)  # 数值标签位置
-        # ax.barh(plot_labels, plot_values, color='skyblue')
-        
-        # ax.set_yticks(range(plot_top))  # 确保刻度位置与标签对应
-        # ax.set_yticklabels(plot_labels, rotation=30, fontsize=int(80/plot_top))  # 旋转一定角度，水平对齐为右
-
-        return {"fig":fig, "origin_data":{"showinfos":to_send_usernames, "counts":to_send_counts}}
     
+    def update_function(self, **kwargs) -> dict:
+        
+        return_dict = {"origin_data":{}}
+
+        return return_dict
+
     def dynamic_update(self, update_interval:int):
         # 该方法在后续的完善的统计历史中可能会用到，但是目前的更新方式暂时不需要用到此方法
         """update_interval: 子进程更新的频率，以分钟为单位"""
@@ -226,9 +114,6 @@ class GenStats:
         assert timeunit in ["days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks"]
         
         status_file_path = f"stats/{self.update_room_name}/{update_info_name}_data_{timevalue}{timeunit}.json"
-        update_dict = {"danmaku":self.context_static,
-                       "username":self.username_static}
-        update_function = update_dict[update_info_name]
 
         now_time = datetime.datetime.now()
 
@@ -245,7 +130,7 @@ class GenStats:
         # 此处判断应该更新的条件，并执行更新操作
         if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=10):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
             eval(f"self.get_by_time({timeunit}={timevalue})")
-            new_results = update_function(normalize=False,
+            new_results = self.update_function(normalize=False,
                                            send_count=info_count)
             
             interval_dict[update_info_name][f"{timevalue}{timeunit}"] = now_time.strftime("%Y-%m-%d-%H-%M-%S")

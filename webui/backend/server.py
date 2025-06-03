@@ -10,7 +10,8 @@ from flask import request, redirect, abort, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from tools.data_filter import GenStats
+from tools.danmaku_static import DanmakuStats
+from tools.username_static import UsernameStats
 
 interface_path = os.path.dirname(__file__)
 sys.path.insert(0, interface_path)
@@ -56,8 +57,19 @@ def time_mes():
     info_count = request.json.get('info_count')
 
     try:
-        StaticClass = GenStats(platform, room_id)
-        message = StaticClass.normal_update(update_info_name=update_info_name, timeunit=timeunit, timevalue=timevalue, info_count=info_count)
+        if update_info_name == "username":
+            StaticClass = UsernameStats(platform, room_id)
+            message = StaticClass.normal_update(update_info_name=update_info_name, timeunit=timeunit, timevalue=timevalue, info_count=info_count)
+        elif update_info_name == "danmaku":
+            StaticClass = DanmakuStats(platform, room_id)
+            message = StaticClass.normal_update(update_info_name=update_info_name, timeunit=timeunit, timevalue=timevalue, info_count=info_count)
+        elif update_info_name == "desuwa":
+            
+            raise NotImplementedError
+        else:
+            return {"data_status":"Update Info Name is invaild."}
+        
+        
 
         return message
     
