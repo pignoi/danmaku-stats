@@ -4,8 +4,9 @@ class UsernameStats(GenStats):
     def __init__(self, platform: str, room_id):
         
         avail_info = "username"
+        info_sheet_name = "danmaku"
 
-        super().__init__(platform, room_id, avail_info = avail_info)
+        super().__init__(platform, room_id, avail_info = avail_info, info_sheet_name=info_sheet_name)
 
     def update_function(self, normalize: bool=False, send_count:int=100, plot_top:int=10):
         

@@ -11,12 +11,15 @@ ENV DB_PATH=/app/dbs
 ENV TZ=Asia/Shanghai
 ENV APP_ENV=PRODUCTION
 
+ADD ./requirements.txt /app/requirements.txt
+WORKDIR /app/
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
+
 ADD ./webui/backend /app/webui/backend
 ADD ./basetools /app/basetools
 WORKDIR /app/webui/backend
 
 RUN mkdir -p logs stats configs
-RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
 
 ENV IS_DOCKER=True
 

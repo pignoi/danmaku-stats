@@ -17,13 +17,17 @@ from basetools.db_manager import LiveDatabase
 class GenStats:
     def __init__(self, platform: str, 
                  room_id, 
-                 avail_info: str, 
+                 avail_info: str,
+                 info_sheet_name:str,
                  update_times: dict = {"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "600minutes": "","history":""}):
         
         self.update_room_name = f"{platform}_{room_id}"
         self.update_json_file = f"configs/{self.update_room_name}_update.json"
         # 设置可以统计的变量名称
         self.avail_info = avail_info
+        self.info_sheet_name = info_sheet_name
+        # 设置可以访问的统计时间区间
+        self.avail_update_times = update_times
 
         self.static_data = pd.DataFrame()
         
@@ -32,7 +36,7 @@ class GenStats:
         # first check
         last_update_time = {}
         if Path(self.update_json_file).exists() == False:
-            last_update_time[self.avail_info] = update_times
+            last_update_time[self.avail_info] = self.avail_update_times
             with open(self.update_json_file, "a+") as f:
                 f.write(json.dumps(last_update_time))
 
@@ -41,14 +45,19 @@ class GenStats:
                 last_update_time = json.load(rf)
                 dict_keys = list(last_update_time.keys())
                 if self.avail_info not in dict_keys:
-                    last_update_time[self.avail_info] = update_times
+                    last_update_time[self.avail_info] = self.avail_update_times
+                # 增加对可用时间的更新处理
+                else:
+                    for update_time in self.avail_update_times:
+                        if update_time not in last_update_time[self.avail_info]:
+                            last_update_time[self.avail_info][update_time] = ""            
 
             with open(self.update_json_file, "w") as wf:
                 wf.write(json.dumps(last_update_time))
 
         Path(f"stats/{self.update_room_name}").mkdir(exist_ok=True)
 
-    def get_by_time(self, **kwargs):
+    def get_by_time(self, sheet_name, **kwargs):
         """
         获取原本的数据的函数，会返回对应时间范围的弹幕数据。
         可用的时间参数: 
@@ -63,7 +72,7 @@ class GenStats:
         now_time = datetime.datetime.now()
         time_delta = datetime.timedelta(**kwargs)
         
-        self.static_data = self.rood_db.select_by_time("danmaku", (now_time-time_delta, now_time))
+        self.static_data = self.rood_db.select_by_time(sheet_name, (now_time-time_delta, now_time))
 
     def sort_by_arg(self, arg_name: str):
         pass
@@ -73,66 +82,44 @@ class GenStats:
         return_dict = {"origin_data":{}}
 
         return return_dict
-
-    def dynamic_update(self, update_interval:int):
-        # 该方法在后续的完善的统计历史中可能会用到，但是目前的更新方式暂时不需要用到此方法
-        """update_interval: 子进程更新的频率，以分钟为单位"""
-        sleep_interval = 60*update_interval/5
-        while True:
-            with open(self.update_json_file) as f:
-                last_update_times = json.load(f)
-                try:
-                    child_last_update = \
-                        datetime.datetime.strptime(last_update_times[f"{update_interval}min"], "%Y-%m-%d-%H-%M-%S")
-                except KeyError:
-                    raise KeyError(f"{update_interval}min not in plan.")
-                except ValueError:
-                    raise ValueError("Format error.")
-            
-                if child_last_update == "":
-                    child_last_update = datetime.datetime.now()
-                    # last_update_times[f"{update_interval}min"] = child_last_update.strftime("%Y-%m-%d-%H-%M-%S")
-            
-            now_time = datetime.datetime.now()
-            now_interval = (now_time - child_last_update).seconds
-
-            if now_interval > update_interval * 60:
-                pass
-
-            time.sleep(sleep_interval)
-            
+    
     # 后续可以使用getattr()来进行通用的匹配
 
     def normal_update(self,
-                      update_info_name:str,
+                      update_info_name:str,    # 这个变量后续或许可以考虑去掉，没有实际的价值了
                       timeunit:str, 
                       timevalue,
                       info_count:int=100):
         
-        assert update_info_name in self.avail_info
+        assert update_info_name == self.avail_info
         assert timeunit in ["days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks"]
+        assert f"{timevalue}{timeunit}" in self.avail_update_times
         
-        status_file_path = f"stats/{self.update_room_name}/{update_info_name}_data_{timevalue}{timeunit}.json"
+        # 对应信息下的时间尺度的信息存储文件位置
+        status_file_path = f"stats/{self.update_room_name}/{self.avail_info}_data_{timevalue}{timeunit}.json"
 
         now_time = datetime.datetime.now()
 
         with open(self.update_json_file) as f:
             interval_dict = json.load(f)
-            str_time = interval_dict[update_info_name][f"{timevalue}{timeunit}"]
+            str_time = interval_dict[self.avail_info][f"{timevalue}{timeunit}"]
             if str_time == "":    # 如果之前从未更新过，将更新时间划为一千年前来确保能够在后续过程中判断为更新
                 str_time = (now_time - datetime.timedelta(days=int(365*1000))).strftime("%Y-%m-%d-%H-%M-%S")
 
-            last_update = datetime.datetime.strptime(str_time, "%Y-%m-%d-%H-%M-%S")
+            try:
+                last_update = datetime.datetime.strptime(str_time, "%Y-%m-%d-%H-%M-%S")                    
+            except ValueError:
+                raise ValueError("Format error.")
         
         now_interval = now_time - last_update
 
         # 此处判断应该更新的条件，并执行更新操作
         if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=10):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
-            eval(f"self.get_by_time({timeunit}={timevalue})")
+            eval(f"self.get_by_time({timeunit}={timevalue}, sheet_name='{self.info_sheet_name}')")
             new_results = self.update_function(normalize=False,
                                            send_count=info_count)
             
-            interval_dict[update_info_name][f"{timevalue}{timeunit}"] = now_time.strftime("%Y-%m-%d-%H-%M-%S")
+            interval_dict[self.avail_info][f"{timevalue}{timeunit}"] = now_time.strftime("%Y-%m-%d-%H-%M-%S")
             
             # 写入状态存储文件。此处保存的手段是直接覆盖之前的结果，因为更新不是实时的，所以保留历史记录也没太大意义
             with open(status_file_path, "w+") as ff:
@@ -145,12 +132,12 @@ class GenStats:
             
             last_update = now_time
         
-        # 无论是否更新，都应该读取对应的状态存储文件，并提取信息
+        # 无论是否更新，都应该读取对应的信息存储文件，并提取信息
         with open(status_file_path) as f4:
             message = json.load(f4)
         
         all_message = {"data_status":"Full Pass.",
-                       "data_info_name":update_info_name,
+                       "data_info_name":self.avail_info,
                        "origin_data":message, 
                        "last_update":last_update.strftime("%Y-%m-%d %H:%M:%S"), 
                        "fig":f"stats/{self.update_room_name}/fig_{timevalue}{timeunit}.png"}
