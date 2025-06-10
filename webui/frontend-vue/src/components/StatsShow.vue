@@ -68,7 +68,12 @@
         </div>
       </div>
     </div>
-
+    <!-- 中部的10…% -->
+    <div class="mid-section">
+      <div class="mid-background">
+        <a href="https://wjq6657.top/desuwa">欢迎访问desuwa统计界面</a>
+      </div>
+    </div>
     <!-- 下部 85%：结果表格 -->
     <div class="bottom-section">
       <div v-if="tableData.length > 0" class="table-container">
@@ -238,12 +243,12 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 
-/* 全局样式 */
+/* 样式 */
 body, html {
-  margin: 0;
-  padding: 0;
+  margin: 0px;
+  padding: 0px;
   height: 100%;
 }
 
@@ -282,13 +287,13 @@ body, html {
 
 /* 上部 15%：时间尺度、时间单位和确定按钮 */
 .top-section {
-  height: 15%;
+  height: 12%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   border-bottom: 1px solid #ccc;
-  padding: 10px;
+  padding: 0px;
 }
 
 .top-section h1 {
@@ -343,10 +348,33 @@ button:hover {
   background-color: #0056b3;
 }
 
+/* 中部 10%：推广信息 */
+.mid-section {
+  height: 5%;
+  padding: 0px;
+  width: 1080px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.mid-background{
+  padding: 0px;
+  background-color: #00fff7;
+  color: white;
+  cursor: pointer;
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 /* 下部 85%：结果表格 */
 .bottom-section {
   height: 85%;
-  padding: 20px;
+  padding: 0px;
   overflow-y: auto; /* 允许滚动 */
 }
 
@@ -437,13 +465,13 @@ th {
 
 @media (max-width: 768px) {
 .top-section {
-  height: 22%;
+  height: 20%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   border-bottom: 1px solid #ccc;
-  padding: 10px;
+  padding: 0px;
 }
 
 .form-row {
@@ -457,9 +485,14 @@ th {
   display: none;
 }
 
+.mid-section {
+  height: 3%;
+  padding: 0px;
+}
+
 .bottom-section {
   height: 78%;
-  padding: 20px;
+  padding: 0px;
   overflow-y: auto; /* 允许滚动 */
 }
 }

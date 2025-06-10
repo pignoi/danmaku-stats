@@ -22,13 +22,13 @@
     <div class="top-section">
       <div class="form">
         <div class="form-row">
-          
-          <div class="form-info">
-            <label>平台: {{ platform }}</label>
+          <div class="form-group">
+            <label> {{infoLabel}} </label>
           </div>
-          <div class="form-info">
-            <label>房间号: {{ room_id }}</label>
-          </div>
+        </div>
+
+        <div class="form-row">
+
           
           <div class="form-group">
             <label for="timeLength">类型:</label>
@@ -49,26 +49,18 @@
           </div>
           
           <div class="form-group">
-            <label for="timeUnit">单位:</label>
-            <select class="top-select" id="timeUnit" v-model="selectedTimeUnit">
-              <option value="minutes">分钟</option>
-              <option value="seconds">秒</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
             <button @click="fetchData">确定</button>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ infoLabel }}</label>
-          </div>
-        </div>
       </div>
     </div>
-
+    <!-- 中部的10…% -->
+    <div class="mid-section">
+      <div class="mid-background">
+        <a href="https://wjq6657.top/">回到弹幕统计界面</a>
+      </div>
+    </div>
     <!-- 下部 85%：结果表格 -->
     <div class="bottom-section">
       <div v-if="tableData.length > 0" class="table-container">
@@ -112,17 +104,16 @@ export default {
       platform: this.$route.query.platform, // 从路由参数中获取平台
       room_id: this.$route.query.room_id, // 从路由参数中获取房间号码
       selectedInfoName: "弹幕",
-      selectedTimeUnit: 'minutes', // 默认时间单位
-      selectedTimeLength: 1, // 默认时间长度
-      infoNameOptions: ["弹幕","用户id"],
-      timeOptions: [1, 2, 5, 30, 600], // 默认时间选项（分钟）
+      selectedTimeLength: "历史统计", // 默认时间长度
+      infoNameOptions: ["弹幕", "神人id"],
+      timeOptions: ["1小时", "1天", "历史统计"], // 默认时间选项（分钟）
       tableData: [], // 全部表格数据
       currentPage: 1, // 当前页码
       itemsPerPage: 10, // 每页显示的数据条数
       showSponsorModal: false,
       infoNameDict:{
         "弹幕": "danmaku",
-        "用户id": "username"
+        "神人id": "username"
       }
     };
   },
@@ -139,16 +130,6 @@ export default {
     },
   },
   watch: {
-    // 监听时间单位变化
-    selectedTimeUnit(newUnit) {
-      if (newUnit === 'minutes') {
-        this.timeOptions = [1, 2, 5, 30, 600];
-      } else if (newUnit === 'seconds') {
-        this.timeOptions = [10, 30];
-      }
-      this.selectedTimeLength = this.timeOptions[0]; // 重置为第一个选项
-      // this.fetchData(); // 自动更新数据
-    },
     // 监听时间尺度变化
     selectedTimeLength() {
       this.fetchData(); // 自动更新数据
@@ -160,25 +141,65 @@ export default {
   methods: {
     // 获取数据
     async fetchData() {
+      let post_timeunit = null;
+      let post_timevalue = null;
+
+      let temp_infoLabel = null;
+
+      let names = null;
+      let values = null;
+      let last_update = null;
+
+      if (this.selectedTimeLength === "1小时") {
+        post_timeunit = "hours";
+        post_timevalue = "1";
+        temp_infoLabel = "玩机器直播间1小时内desuwa弹幕统计";
+      };
+      if (this.selectedTimeLength === "1天") {
+        post_timeunit = "days";
+        post_timevalue = "1";
+        temp_infoLabel = "玩机器直播间1天内desuwa弹幕统计";
+      }
+      if (this.selectedTimeLength === "历史统计") {
+        post_timeunit = "days";
+        post_timevalue = "100000";
+        temp_infoLabel = "玩机器直播间历史desuwa弹幕统计";
+      }
+
       const data = {
-        platform: this.platform,
-        room_id: this.room_id,
-        info_name: this.infoNameDict[this.selectedInfoName],
-        timeunit: this.selectedTimeUnit,
-        timevalue: this.selectedTimeLength,
-        info_count:100,
+        platform: "douyu",
+        room_id: "6979222",
+        timeunit: post_timeunit,
+        timevalue: post_timevalue
       };
 
       try {
         this.infoLabel = "正在更新，请不要重复点击~";
-        const response = await axios.post('https://media.axuan.wang/get_by_time', data);
+        const response = await axios.post('https://media.axuan.wang/desuwa', data);
         
         if (response.data["data_status"] === "Full Pass."){
-          const names = response.data["origin_data"]["showinfos"];
-          const values = response.data["origin_data"]["counts"];
-          const last_update = response.data["last_update"];
+          if (this.infoNameDict[this.selectedInfoName] == "danmaku"){
+            names = response.data["origin_data"]["showinfos"][0];
+            values = response.data["origin_data"]["counts"][0];
+            last_update = response.data["last_update"];
+          }
+          else{
+            names = response.data["origin_data"]["showinfos"][1];
+            values = response.data["origin_data"]["counts"][1];
+            last_update = response.data["last_update"];
+          }
 
-          this.infoLabel = "最后更新时间: " + last_update;
+        if (this.selectedTimeLength === "1小时") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前1小时desuwa弹幕统计";
+        };
+        if (this.selectedTimeLength === "1天") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前一天desuwa弹幕统计";
+        }
+        if (this.selectedTimeLength === "历史统计") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前历史desuwa弹幕统计";
+        }
+
+          this.infoLabel = temp_infoLabel;
           // 将名称和数值组合成表格数据
           this.tableData = names.map((name, index) => ({
             name,
@@ -232,13 +253,13 @@ export default {
   },
   mounted() {
     // 初始化时加载数据
-    document.title = this.platform+" "+this.room_id+" "+"弹幕统计";
+    document.title = "玩机器直播间desuwa弹幕统计";
     this.fetchData();
   },
 };
 </script>
 
-<style>
+<style scoped>
 
 /* 全局样式 */
 body, html {
@@ -282,13 +303,13 @@ body, html {
 
 /* 上部 15%：时间尺度、时间单位和确定按钮 */
 .top-section {
-  height: 15%;
+  height: 12%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   border-bottom: 1px solid #ccc;
-  padding: 10px;
+  padding: 0px;
 }
 
 .top-section h1 {
@@ -321,7 +342,7 @@ body, html {
 }
 
 .top-select {
-  width: 80px;
+  width: 120px;
   height: 35px;
 }
 
@@ -343,10 +364,33 @@ button:hover {
   background-color: #0056b3;
 }
 
+/* 中部 10%：推广信息 */
+.mid-section {
+  height: 5%;
+  padding: 0px;
+  width: 1080px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.mid-background{
+  padding: 0px;
+  background-color: #00fff7;
+  color: white;
+  cursor: pointer;
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 /* 下部 85%：结果表格 */
 .bottom-section {
   height: 85%;
-  padding: 20px;
+  padding: 0px;
   overflow-y: auto; /* 允许滚动 */
 }
 
