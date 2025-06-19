@@ -22,7 +22,7 @@ Flask-Limiter==3.9.2
 fonttools==4.55.3
 frozenlist==1.4.1
 h11==0.16.0
-httpcore==1.0.6
+httpcore==1.0.9
 httpx==0.26.0
 idna==3.7
 importlib_metadata==8.5.0

@@ -1,4 +1,5 @@
 import os 
+import datetime
 import sqlite3
 import threading
 import time
@@ -73,6 +74,10 @@ class LiveDatabase:
 
             self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
             self.sc_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
+            
+            # 为筛选模式初始化变量
+            self.select_sentence = ""
+            self.select_paramters = []
 
         elif (collect_mode == False and Path(path_to_db).exists() == False):
             raise FileExistsError(f"Collect Mode is False but {path_to_db} do Not Exist.")
@@ -133,6 +138,8 @@ class LiveDatabase:
             start_time = time_span[0]
             end_time = time_span[1]
 
+            assert start_time <= end_time
+
             sql_select = f"SELECT * FROM {sheet_name} WHERE time BETWEEN ? AND ?"
             result = self.cur.execute(sql_select, (start_time, end_time)).fetchall()
         
@@ -145,3 +152,46 @@ class LiveDatabase:
             raise KeyError(f"There is no table named {sheet_name}")
         
         return result_frame
+    
+    # 对常用的参数进行灵活的组合，使得筛选方法变为可拓展的方法
+    def para_time(self, start_time:datetime.datetime, end_time:datetime.datetime):
+
+        assert start_time <= end_time
+
+        if self.select_sentence == "":
+            sql_select = "time BETWEEN ? AND ? "
+        else:
+            sql_select = "AND time BETWEEN ? AND ? "
+        self.select_sentence += sql_select
+        
+        self.select_paramters.append(start_time)
+        self.select_paramters.append(end_time)
+        
+    def para_include(self, field_name, include_para):
+        
+        if self.select_sentence == "":
+            sql_select = rf"{field_name} LIKE ? ESCAPE '\' "
+        else:
+            sql_select = rf"AND {field_name} LIKE ? ESCAPE '\' "
+        self.select_sentence += sql_select
+        self.select_paramters.append(f"%{include_para}%")
+
+    def select_run(self, sheet_name):
+        """
+        运行筛选方法的主函数。
+        """
+        if (sheet_name,) in self.table_names:
+            select_head = f"SELECT * FROM {sheet_name} WHERE "
+            sql_select = select_head + self.select_sentence
+
+            result = self.cur.execute(sql_select, self.select_paramters).fetchall()
+
+            keys = getattr(self, f"{sheet_name}_keys")
+                
+            result_dict = self._format_results(keys, result)
+            result_frame = pd.DataFrame.from_dict(result_dict)
+       
+        else:
+            raise KeyError(f"There is no table named {sheet_name}")
+        
+        return result_frame        

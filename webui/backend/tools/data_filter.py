@@ -57,9 +57,9 @@ class GenStats:
 
         Path(f"stats/{self.update_room_name}").mkdir(exist_ok=True)
 
-    def get_by_time(self, sheet_name, **kwargs):
+    def get_static_data(self, sheet_name, **kwargs):
         """
-        获取原本的数据的函数，会返回对应时间范围的弹幕数据。
+        最基础的获取原本的数据的函数，会返回对应时间范围的弹幕数据，在引用中可以进行完全的更改。
         可用的时间参数: 
         days: float,
         seconds: float,
@@ -72,7 +72,9 @@ class GenStats:
         now_time = datetime.datetime.now()
         time_delta = datetime.timedelta(**kwargs)
         
-        self.static_data = self.rood_db.select_by_time(sheet_name, (now_time-time_delta, now_time))
+        # self.static_data = self.rood_db.select_by_time(sheet_name, (now_time-time_delta, now_time))
+        self.rood_db.para_time(now_time-time_delta, now_time)
+        self.static_data = self.rood_db.select_run(sheet_name=sheet_name)
 
     def sort_by_arg(self, arg_name: str):
         pass
@@ -115,7 +117,7 @@ class GenStats:
 
         # 此处判断应该更新的条件，并执行更新操作
         if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=10):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
-            eval(f"self.get_by_time({timeunit}={timevalue}, sheet_name='{self.info_sheet_name}')")
+            eval(f"self.get_static_data({timeunit}={timevalue}, sheet_name='{self.info_sheet_name}')")
             new_results = self.update_function(normalize=False,
                                            send_count=info_count)
             

@@ -1,7 +1,7 @@
 services:
   backend:
     container_name: backend
-    image: pignoi/danmaku_backend:v0.3.2
+    image: pignoi/danmaku_backend:v0.3.4
     tty: true
     stdin_open: true
     restart: "unless-stopped"

@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(level=logging.INFO, 
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-import portalocker
+# import portalocker
 import gc
 
 import numpy as np
@@ -40,30 +40,42 @@ class DesuwaStats(GenStats):
             self.thread.setDaemon(True)  # 设置为守护线程，主程序退出时自动结束
             self.thread.start()
 
-    def update_function(self, normalize: bool=False, send_count:int=100, plot_top:int=10):
+    def get_static_data(self, sheet_name, **kwargs):
+        # 首先对时间进行检索，再对desuwa进行筛选
+        
+        now_time = datetime.datetime.now()
+        time_delta = datetime.timedelta(**kwargs)
+        
+        # self.static_data = self.rood_db.select_by_time(sheet_name, (now_time-time_delta, now_time))
+        self.rood_db.para_time(now_time-time_delta, now_time)
+        self.rood_db.para_include("context", "desuwa")
+        self.static_data = self.rood_db.select_run(sheet_name=sheet_name)
+
+    def update_function(self, normalize_bool: bool=False, send_count:int=100, plot_top:int=10):
 
         """
         对弹幕的文本信息进行提取的函数。
-        normalize: 是否对数据进行百分比处理
+        normalize: 是否对数据进行百分比处理的布尔值
         plot_top: 统计结果中希望表现出的个数
         """
         
         if self.static_data.empty:
-            raise ValueError("Data is Empty.")
+            return {"fig":'', "origin_data":{"showinfos":[[],[]], "counts":[[],[]]}}
         else:
             data = self.static_data
 
         danmaku_data = data["context"]
         userinfo_data = data["username"]
 
-        desuwa_filter = danmaku_data.str.contains("desuwa")
+        ## 此处不需要再对desuwa进行python接口的处理和筛选
+        # desuwa_filter = danmaku_data.str.contains("desuwa")
 
-        danmaku_data = danmaku_data[desuwa_filter]
-        userinfo_data = userinfo_data[desuwa_filter]
+        # danmaku_data = danmaku_data[desuwa_filter]
+        # userinfo_data = userinfo_data[desuwa_filter]
 
         # 对desuwa弹幕信息和发送desuwa弹幕的神人id进行计数和后处理 
-        danmaku_counts = danmaku_data.value_counts(normalize=normalize)
-        userinfo_counts = userinfo_data.value_counts(normalize=normalize)
+        danmaku_counts = danmaku_data.value_counts(normalize=normalize_bool)
+        userinfo_counts = userinfo_data.value_counts(normalize=normalize_bool)
         
         danmaku_counts_pdf = danmaku_counts.reset_index()
         danmaku_counts_pdf.columns = ['context', 'count']
@@ -120,8 +132,8 @@ class DesuwaStats(GenStats):
             if now_interval >= update_interval:
                 time.sleep(np.random.randint(10))
                 logging.info(f"Dynamic update the {self.update_timevalue}{self.update_timeunit} data.")
-                eval(f"self.get_by_time({self.update_timeunit}={self.update_timevalue}, sheet_name='{self.info_sheet_name}')")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
-                new_results = self.update_function(normalize=False,
+                eval(f"self.get_static_data({self.update_timeunit}={self.update_timevalue}, sheet_name='{self.info_sheet_name}')")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
+                new_results = self.update_function(normalize_bool=False,
                                             send_count=100)
                 
                 # interval_dict[self.avail_info][f"{self.update_timevalue}{self.update_timeunit}"] = now_time.strftime("%Y-%m-%d-%H-%M-%S")
