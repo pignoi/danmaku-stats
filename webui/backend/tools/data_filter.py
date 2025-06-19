@@ -116,7 +116,7 @@ class GenStats:
         now_interval = now_time - last_update
 
         # 此处判断应该更新的条件，并执行更新操作
-        if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=10):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
+        if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=60):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
             eval(f"self.get_static_data({timeunit}={timevalue}, sheet_name='{self.info_sheet_name}')")
             new_results = self.update_function(normalize=False,
                                            send_count=info_count)
