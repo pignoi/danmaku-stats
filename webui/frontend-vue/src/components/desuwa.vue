@@ -106,7 +106,7 @@ export default {
       selectedInfoName: "弹幕",
       selectedTimeLength: "历史统计", // 默认时间长度
       infoNameOptions: ["弹幕", "神人id"],
-      timeOptions: ["1小时", "1天", "历史统计"], // 默认时间选项（分钟）
+      timeOptions: ["1分钟", "1小时", "1天", "历史统计"], // 默认时间选项（分钟）
       tableData: [], // 全部表格数据
       currentPage: 1, // 当前页码
       itemsPerPage: 10, // 每页显示的数据条数
@@ -149,7 +149,12 @@ export default {
       let names = null;
       let values = null;
       let last_update = null;
-
+      
+      if (this.selectedTimeLength === "1分钟") {
+        post_timeunit = "minutes";
+        post_timevalue = "1";
+        temp_infoLabel = "玩机器直播间1分钟内desuwa弹幕统计";
+      };
       if (this.selectedTimeLength === "1小时") {
         post_timeunit = "hours";
         post_timevalue = "1";
@@ -188,7 +193,10 @@ export default {
             values = response.data["origin_data"]["counts"][1];
             last_update = response.data["last_update"];
           }
-
+        
+        if (this.selectedTimeLength === "1分钟") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前1分钟desuwa弹幕统计";
+        };
         if (this.selectedTimeLength === "1小时") {
           temp_infoLabel = "玩机器直播间"+last_update+"之前1小时desuwa弹幕统计";
         };

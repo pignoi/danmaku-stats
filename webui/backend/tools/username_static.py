@@ -8,11 +8,11 @@ class UsernameStats(GenStats):
 
         super().__init__(platform, room_id, avail_info = avail_info, info_sheet_name=info_sheet_name)
 
-    def update_function(self, normalize: bool=False, send_count:int=100, plot_top:int=10):
+    def update_function(self, normalize_bool: bool=False, send_count:int=100, plot_top:int=10):
         
         """
         对发送弹幕的用户id信息进行提取的函数。
-        normalize: 是否对数据进行百分比处理
+        normalize_bool: 是否对数据进行百分比处理
         plot_top: 统计结果中希望表现出的个数
         """
         if self.static_data.empty:
@@ -22,7 +22,7 @@ class UsernameStats(GenStats):
 
         username_data = data["username"]
         
-        username_counts = username_data.value_counts(normalize=normalize)
+        username_counts = username_data.value_counts(normalize=normalize_bool)
         # danmaku_percents = danmaku_counts.values / np.sum(danmaku_counts.values)
         
         counts_pdf = username_counts.reset_index()

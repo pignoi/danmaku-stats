@@ -76,12 +76,15 @@ class LiveDatabase:
             self.sc_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
             
             # 为筛选模式初始化变量
-            self.select_sentence = ""
-            self.select_paramters = []
+            self._select_init()
 
         elif (collect_mode == False and Path(path_to_db).exists() == False):
             raise FileExistsError(f"Collect Mode is False but {path_to_db} do Not Exist.")
     
+    def _select_init(self):
+        self.select_sentence = ""
+        self.select_paramters = []
+
     def insert(self, sheet_name, data):
         if sheet_name != "danmaku":
             data_numb = len(data)
@@ -194,4 +197,7 @@ class LiveDatabase:
         else:
             raise KeyError(f"There is no table named {sheet_name}")
         
+        # 在运行完一轮筛选后对语句和参数进行清除
+        self._select_init()
+
         return result_frame        

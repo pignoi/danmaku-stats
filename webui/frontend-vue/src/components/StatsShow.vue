@@ -485,10 +485,10 @@ th {
   display: none;
 }
 
-.mid-section {
+/* .mid-section {
   height: 3%;
   padding: 0px;
-}
+} */
 
 .bottom-section {
   height: 78%;

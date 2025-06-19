@@ -16,7 +16,7 @@ class DesuwaStats(GenStats):
     def __init__(self, platform: str, room_id):
 
         avail_info = "desuwa"
-        update_times = {"1hours":"","1days":"", "100000days":""}
+        update_times = {"1minutes":"", "1hours":"", "1days":"", "100000days":""}
         info_sheet_name = "danmaku"
 
         super().__init__(platform, room_id, avail_info, info_sheet_name, update_times)
@@ -36,8 +36,8 @@ class DesuwaStats(GenStats):
             logging.info(f"Start the dynamic update method of {self.update_timevalue}{self.update_timeunit}.")
             
             self._running = True
-            self.thread = threading.Thread(target=self.dynamic_update)
-            self.thread.setDaemon(True)  # 设置为守护线程，主程序退出时自动结束
+            self.thread = threading.Thread(target=self.dynamic_update, daemon=True)
+            # self.thread.setDaemon(True)  # 设置为守护线程，主程序退出时自动结束
             self.thread.start()
 
     def get_static_data(self, sheet_name, **kwargs):
@@ -46,7 +46,6 @@ class DesuwaStats(GenStats):
         now_time = datetime.datetime.now()
         time_delta = datetime.timedelta(**kwargs)
         
-        # self.static_data = self.rood_db.select_by_time(sheet_name, (now_time-time_delta, now_time))
         self.rood_db.para_time(now_time-time_delta, now_time)
         self.rood_db.para_include("context", "desuwa")
         self.static_data = self.rood_db.select_run(sheet_name=sheet_name)
@@ -108,8 +107,13 @@ class DesuwaStats(GenStats):
         if update_interval > datetime.timedelta(days=1):
             update_interval = datetime.timedelta(days=1)
         
-        sleep_interval = (update_interval/5).total_seconds()
-        
+        if update_interval >= datetime.timedelta(days=0.5):
+            sleep_interval = (update_interval/20).total_seconds()
+        elif update_interval < datetime.timedelta(days=0.5) and update_interval >= datetime.timedelta(hours=1):
+            sleep_interval = (update_interval/10).total_seconds()
+        else:
+            sleep_interval = (update_interval).total_seconds()
+
         status_file_path = f"stats/{self.update_room_name}/{self.avail_info}_data_{self.update_timevalue}{self.update_timeunit}.json"
         
         while self._running:
@@ -162,7 +166,8 @@ class DesuwaStats(GenStats):
     def run_send(self, 
                  timevalue: str,
                  timeunit:str):
-        
+        """直接发送信息的函数。"""
+
         status_file_path = f"stats/{self.update_room_name}/{self.avail_info}_data_{timevalue}{timeunit}.json"
 
         # 访问时打开对应的信息存储文件，包括返回信息存储和时间状态存储
@@ -190,4 +195,37 @@ class DesuwaStats(GenStats):
 
         return  all_message
 
-    # normal_update的函数应该还可以用
+    # normal_update的函数可以直接继承过来
+    def force_update(self,
+                    timeunit:str, 
+                    timevalue,
+                    info_count:int=100):
+        
+        now_time = datetime.datetime.now()
+        status_file_path = f"stats/{self.update_room_name}/{self.avail_info}_data_{timevalue}{timeunit}.json"
+        
+        logging.info(f"Force updating the {timevalue}{timeunit} data.")
+        eval(f"self.get_static_data({timeunit}={timevalue}, sheet_name='{self.info_sheet_name}')")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
+        new_results = self.update_function(normalize_bool=False,
+                                    send_count=info_count)
+        
+        # 写入状态存储文件。此处保存的手段是直接覆盖之前的结果，因为更新不是实时的，所以保留历史记录也没太大意义
+        with open(status_file_path, "w") as ff:
+            ff.write(json.dumps(new_results["origin_data"]))
+        
+        # 写入时间记录文件，因为这里涉及多线程对文件的操作，需要再加载一遍实时的结果进行保存
+        with open(self.update_json_file, "r") as rfff:
+            after_update_interval_dict = json.load(rfff)
+            after_update_interval_dict[self.avail_info][f"{timevalue}{timeunit}"] = now_time.strftime("%Y-%m-%d-%H-%M-%S")
+        
+        with open(self.update_json_file, "w") as wfff:
+            wfff.write(json.dumps(after_update_interval_dict))
+
+        last_update = now_time
+
+        return {"data_status":"Full Pass.",
+                "data_info_name":self.avail_info,
+                "origin_data":new_results["origin_data"], 
+                "last_update":last_update.strftime("%Y-%m-%d %H:%M:%S"), 
+                "fig":f"stats/{self.update_room_name}/fig_{timevalue}{timeunit}.png"}
+        

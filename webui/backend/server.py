@@ -95,8 +95,8 @@ def desuwa_mes():
     else:
         return jsonify({"data_status": "Desuwa not support this live room."})
 
-@server.route("/desuwa_normal", methods=["POST"])
-def desuwa_normal():
+@server.route("/desuwa_force", methods=["POST"])
+def desuwa_force():
     platform = request.json.get('platform')
     room_id = request.json.get('room_id')
     timeunit = request.json.get('timeunit')
@@ -104,7 +104,7 @@ def desuwa_normal():
 
     if platform == "douyu" and str(room_id) == "6979222":
         StaticClass = DesuwaStats(platform, room_id)
-        message = StaticClass.normal_update(update_info_name="desuwa", timevalue=timevalue, timeunit=timeunit)
+        message = StaticClass.force_update(timevalue=timevalue, timeunit=timeunit)
 
         return message
 
