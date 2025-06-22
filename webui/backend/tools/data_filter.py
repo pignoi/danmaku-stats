@@ -1,7 +1,10 @@
 # 定义基本的统计方法，能够方便地访问数据库并返回便于后期处理的数值
 
-import datetime, time
 import logging
+logging.basicConfig(level=logging.INFO, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+import datetime, time
 import threading
 import pandas as pd
 import json
