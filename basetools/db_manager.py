@@ -64,12 +64,10 @@ class LiveDatabase:
                     self.drop_interval = 5
 
                 self.cache_danmaku = []
-                self.cache_thread = threading.Thread(target=self.drop_cache)
-                self.cache_thread.setDaemon(True)
+                self.cache_thread = threading.Thread(target=self.drop_cache, daemon=True)
                 self.cache_thread.start()
 
-                monitor_thread = threading.Thread(target=self.monitor_danmaku)
-                monitor_thread.setDaemon(True)
+                monitor_thread = threading.Thread(target=self.monitor_danmaku, daemon=True)
                 monitor_thread.start()
 
             self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
@@ -118,14 +116,21 @@ class LiveDatabase:
             time.sleep(self.drop_interval/2)
     
     def monitor_danmaku(self):
+        """对drop到数据库的线程进行手动监控的方法，防止意外终止，但是好像加了daemon之后就还好"""
         while True:
             if self.cache_thread.is_alive() == False:
                 logging.info("danmaku drop cache child process died.")
                 # self.cache_thread.join()
-                self.cache_thread = threading.Thread(target=self.drop_cache)
-                self.cache_thread.setDaemon(True)
+                self.cache_thread = threading.Thread(target=self.drop_cache, daemon=True)
                 self.cache_thread.start()
             time.sleep(0.5)
+
+    def split_sheet(self):
+        # 定义一段时间后分表的方法
+        # 因为一段时间内的总弹幕量不会非常大，目前的想法是每隔一段时间对本表中第一条数据进行和现在的时间进行比较，如果超出一定阈值就将**一定时间范围**的数据放到一个新表，然后将对应的数据在本表中删除
+        # 需要更新的内容: self.table_names，后续的功能需要根据这个变量的内容进行匹配修改，如history的数值需要对符合name的所有表进行遍历
+        while True:
+            pass
 
     def _format_results(self, keys:list, values:list) -> dict:         
         dict = {}
@@ -136,7 +141,7 @@ class LiveDatabase:
         return dict
 
     def select_by_time(self, sheet_name, time_span) -> pd.DataFrame:
-        
+        """原本的根据时间进行筛选的方法"""
         if (sheet_name,) in self.table_names:
             start_time = time_span[0]
             end_time = time_span[1]
@@ -193,7 +198,7 @@ class LiveDatabase:
                 
             result_dict = self._format_results(keys, result)
             result_frame = pd.DataFrame.from_dict(result_dict)
-       
+        
         else:
             raise KeyError(f"There is no table named {sheet_name}")
         
