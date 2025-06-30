@@ -26,23 +26,25 @@ class LiveDatabase:
                 self.conn = sqlite3.connect(file_uri, check_same_thread=False, uri=True)
                 self.cur = self.conn.cursor()
 
-                self.table_names = self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()
+                self.operate_table_names = [i[0] for i in self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()]
+                self.table_names = ["danmaku", "super_chat", "gifts"]
 
             elif collect_mode == True:
                 self.conn = sqlite3.connect(path_to_db, check_same_thread=False)
                 self.cur = self.conn.cursor()
                 # 目前支持的类型：弹幕，SC(B站限定)，礼物，TBC
                 # 弹幕数据量很大，不再保留原始信息，为了未来的用户画像分析需要保留用户uid。剩下的数据量较小可以保留原始信息。
-                self.table_names = self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()
+                self.operate_table_names = [i[0] for i in self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()]
+                self.table_names = ["danmaku", "super_chat", "gifts"]
                 
-                if (("danmaku",) in self.table_names) == False:
+                if ("danmaku" in self.table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS danmaku (
                     time DATETIME, username TEXT, context TEXT,
                     uid TEXT,
                     fans_club TEXT, fans_level TEXT
                     )""")                
                 
-                if (("super_chat",) in self.table_names) == False and platform == "bilibili":
+                if ("super_chat" in self.table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS super_chat (
                     time DATETIME, username TEXT, context TEXT,
                     price INT, keep_time INT,
@@ -50,7 +52,7 @@ class LiveDatabase:
                     origin_data TEXT
                     )""")                
 
-                if (("gifts",) in self.table_names) == False:
+                if ("gifts" in self.table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS gifts (
                     time DATETIME, username TEXT, context TEXT,
                     price INT,
@@ -69,6 +71,10 @@ class LiveDatabase:
 
                 monitor_thread = threading.Thread(target=self.monitor_danmaku, daemon=True)
                 monitor_thread.start()
+
+                self._lock_tables = False
+                split_thread = threading.Thread(target=self.split_sheet, daemon=True)
+                split_thread.start()
 
             self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
             self.sc_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
@@ -102,7 +108,11 @@ class LiveDatabase:
         sql_insert = f"INSERT INTO danmaku values ({','.join(['?' for _ in range(6)])})"
         while True:
             now_time = time.time()
+            
             if len(self.cache_danmaku) > 50 or now_time - start_time >= self.drop_interval:
+                # 如果正在进行分表操作，需要等到锁解除
+                while self._lock_tables == True:
+                    time.sleep(1)
                 try:
                     self.cur.executemany(sql_insert, self.cache_danmaku)
                 except Exception as e:
@@ -130,7 +140,36 @@ class LiveDatabase:
         # 因为一段时间内的总弹幕量不会非常大，目前的想法是每隔一段时间对本表中第一条数据进行和现在的时间进行比较，如果超出一定阈值就将**一定时间范围**的数据放到一个新表，然后将对应的数据在本表中删除
         # 需要更新的内容: self.table_names，后续的功能需要根据这个变量的内容进行匹配修改，如history的数值需要对符合name的所有表进行遍历
         while True:
-            pass
+            self._lock_tables = True
+            for table_name in self.table_names:
+                
+                first_time_row = self.cur.execute(f"SELECT time FROM {table_name} LIMIT 1").fetchone()
+                if not first_time_row:
+                    time_diff = datetime.timedelta(hours=1)
+                else:
+                    first_time_str = first_time_row[0]
+                    logging.info(f"First time of {table_name} is {first_time_str}.")
+                    now_time = datetime.datetime.now()
+                    first_time = datetime.datetime.strptime(first_time_str, "%Y-%m-%d %H:%M:%S")
+                    time_diff = now_time - first_time
+
+                if time_diff > datetime.timedelta(weeks=1):
+                    new_table_name = f"{table_name}_{first_time.strftime('%Y%m%d')}_{now_time.strftime('%Y%m%d')}"
+                    self.conn.execute("BEGIN TRANSACTION")
+                    # 创建存储旧数据的新的表
+                    self.cur.execute(f"CREATE TABLE {new_table_name} AS SELECT * FROM {table_name} WHERE 1=0")
+                    # 将所有老表中的数据迁移到新表
+                    self.cur.execute(f"INSERT INTO {new_table_name} SELECT * FROM {table_name}")
+                    # 删除原表中的数据
+                    self.cur.execute(f"DELETE FROM {table_name}")
+                    self.conn.commit()
+
+                    logging.info(f"已创建新表 {new_table_name}")
+                
+                self.operate_table_names = [i[0] for i in self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()]
+                
+            self._lock_tables = False
+            time.sleep(3600*24)
 
     def _format_results(self, keys:list, values:list) -> dict:         
         dict = {}
@@ -142,7 +181,7 @@ class LiveDatabase:
 
     def select_by_time(self, sheet_name, time_span) -> pd.DataFrame:
         """原本的根据时间进行筛选的方法"""
-        if (sheet_name,) in self.table_names:
+        if sheet_name in self.table_names:
             start_time = time_span[0]
             end_time = time_span[1]
 
@@ -188,7 +227,7 @@ class LiveDatabase:
         """
         运行筛选方法的主函数。
         """
-        if (sheet_name,) in self.table_names:
+        if sheet_name in self.table_names:
             select_head = f"SELECT * FROM {sheet_name} WHERE "
             sql_select = select_head + self.select_sentence
 
