@@ -29,4 +29,4 @@ ENV ROOM_ID=3044248
 ENV ACCEPT_GIFT=False
 
 # CMD ["python3", "data_collector.py", "-p", $PLATFORM, "-r", $ROOM_ID, "-g", $ACCEPT_GIFT]    # TODO: 这一行含变量使用JSON会报错，不适用会报warning
-CMD python3 data_collector.py -p $PLATFORM -r $ROOM_ID -g $ACCEPT_GIFT
+CMD ["bash", "run.sh"]

@@ -15,10 +15,10 @@ Desuwa1min= DesuwaStats(platform="douyu", room_id="6979222")
 
 if __name__ == "__main__":
 
-    DesuwaHistory.init_update(timevalue=100000, timeunit="days")
-    Desuwa1Day.init_update(timevalue=1, timeunit="days")
-    Desuwa1hours.init_update(timevalue=1, timeunit="hours")
-    Desuwa1min.init_update(timevalue=1, timeunit="minutes")
+    DesuwaHistory.init_dynamic_update(timevalue=100000, timeunit="days")
+    Desuwa1Day.init_dynamic_update(timevalue=1, timeunit="days")
+    Desuwa1hours.init_dynamic_update(timevalue=1, timeunit="hours")
+    Desuwa1min.init_dynamic_update(timevalue=1, timeunit="minutes")
 
     while True:
         time.sleep(10000)
