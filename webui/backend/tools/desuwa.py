@@ -21,7 +21,7 @@ class DesuwaStats(GenStats):
 
         super().__init__(platform, room_id, avail_info, info_sheet_name, update_times)
 
-    def get_static_data(self, sheet_name, **kwargs):
+    def get_static_data(self, **kwargs):
         # 首先对时间进行检索，再对desuwa等木柜子的后缀进行筛选
         
         now_time = datetime.datetime.now()
@@ -29,15 +29,15 @@ class DesuwaStats(GenStats):
         
         self.rood_db.para_time(now_time-time_delta, now_time)
         self.rood_db.para_include("context", "desuwa")
-        static_data_desuwa = self.rood_db.select_run(sheet_name=sheet_name)
+        static_data_desuwa = self.rood_db.select_run()
 
         self.rood_db.para_time(now_time-time_delta, now_time)
         self.rood_db.para_include("context", "desu")
-        static_data_desu = self.rood_db.select_run(sheet_name=sheet_name)
+        static_data_desu = self.rood_db.select_run()
 
         self.rood_db.para_time(now_time-time_delta, now_time)
         self.rood_db.para_include("context", "ですわ")
-        static_data_ですわ = self.rood_db.select_run(sheet_name=sheet_name)
+        static_data_ですわ = self.rood_db.select_run()
 
         self.static_data = pd.merge(static_data_desuwa, static_data_desu, how="outer")
         self.static_data = pd.merge(self.static_data, static_data_ですわ, how="outer")

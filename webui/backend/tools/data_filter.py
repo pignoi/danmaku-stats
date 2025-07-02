@@ -25,6 +25,14 @@ class GenStats:
                  info_sheet_name:str,
                  update_times: dict = {"10seconds":"", "30seconds":"", "1minutes": "", "2minutes": "", "5minutes": "", "30minutes": "", "600minutes": "","history":""}):
         
+        """
+        :param platform: 统计的平台
+        :param room_id: 房间号
+        :param avail_info: 筛选的统计变量名称，这个可以是自定义的，只用于规定存储信息当中名称
+        :param info_sheet_name: 从数据库的哪一种表当中提取信息
+        :param update_times: 可以更新的时间尺度字典
+        """
+
         self.update_room_name = f"{platform}_{room_id}"
         self.update_json_file = f"configs/{self.update_room_name}_update.json"
         # 设置可以统计的变量名称
@@ -35,7 +43,7 @@ class GenStats:
 
         self.static_data = pd.DataFrame()
         
-        self.rood_db = LiveDatabase(platform, room_id, collect_mode=False)
+        self.rood_db = LiveDatabase(platform, room_id, collect_mode=False, flit_table=self.info_sheet_name)
 
         # first check
         last_update_time = {}
@@ -79,7 +87,7 @@ class GenStats:
             self.dynamic_thread = threading.Thread(target=self.dynamic_update, daemon=True)
             self.dynamic_thread.start()
     
-    def get_static_data(self, sheet_name, **kwargs):
+    def get_static_data(self, **kwargs):
         """
         最基础的获取原本的数据的函数，会返回对应时间范围的弹幕数据，在引用中可以进行完全的更改。
         可用的时间参数: 
@@ -93,10 +101,9 @@ class GenStats:
 
         now_time = datetime.datetime.now()
         time_delta = datetime.timedelta(**kwargs)
-        
-        # self.static_data = self.rood_db.select_by_time(sheet_name, (now_time-time_delta, now_time))
+
         self.rood_db.para_time(now_time-time_delta, now_time)
-        self.static_data = self.rood_db.select_run(sheet_name=sheet_name)
+        self.static_data = self.rood_db.select_run()
 
     def sort_by_arg(self, arg_name: str):
         pass
@@ -139,7 +146,7 @@ class GenStats:
 
         # 此处判断应该更新的条件，并执行更新操作
         if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=60):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
-            eval(f"self.get_static_data({timeunit}={timevalue}, sheet_name='{self.info_sheet_name}')")
+            eval(f"self.get_static_data({timeunit}={timevalue}')")
             new_results = self.update_function(normalize_bool=False,
                                            send_count=info_count)
             
@@ -204,7 +211,7 @@ class GenStats:
             if now_interval >= update_interval:
                 time.sleep(np.random.randint(10))
                 logging.info(f"Dynamic update the {self.update_timevalue}{self.update_timeunit} data.")
-                eval(f"self.get_static_data({self.update_timeunit}={self.update_timevalue}, sheet_name='{self.info_sheet_name}')")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
+                eval(f"self.get_static_data({self.update_timeunit}={self.update_timevalue}')")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
                 new_results = self.update_function(normalize_bool=False,
                                             send_count=100)
                 
@@ -241,7 +248,7 @@ class GenStats:
         status_file_path = f"stats/{self.update_room_name}/{self.avail_info}_data_{timevalue}{timeunit}.json"
         
         logging.info(f"Force updating the {timevalue}{timeunit} data.")
-        eval(f"self.get_static_data({timeunit}={timevalue}, sheet_name='{self.info_sheet_name}')")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
+        eval(f"self.get_static_data({timeunit}={timevalue})")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
         new_results = self.update_function(normalize_bool=False,
                                     send_count=info_count)
         
