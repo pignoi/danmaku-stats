@@ -1,7 +1,7 @@
 services:
   collect_6657:
     container_name: collect_6657
-    image: pignoi/danmaku_collector:v0.1.4
+    image: pignoi/danmaku_collector:v1.0.0
     tty: true
     stdin_open: true
     restart: "unless-stopped"
@@ -15,7 +15,7 @@ services:
 
   collect_zc:
     container_name: collect_zc
-    image: pignoi/danmaku_collector:v0.1.4
+    image: pignoi/danmaku_collector:v1.0.0
     tty: true
     stdin_open: true
     restart: "unless-stopped"

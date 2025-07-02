@@ -13,7 +13,13 @@ class LiveDatabase:
     def __init__(self, platform, room_id,
                  collect_mode: bool=True,
                  flit_table: str="If not in collect mode, must set!"):
-
+        """
+        :param platform: 统计的平台
+        :param room_id: 房间号
+        :param collect_mode: 是否为收集模式，如果不是可以节省一些不必要的线程资源
+        :param flit_table: 如果不是收集模式，就需要对所需要查找的table进行全局变量的设置，这是由目前的
+        数据筛选方法所决定的参数设置
+        """
         plat_dict = {"bilibili":"bili", "douyu":"douyu"}
 
         try:
