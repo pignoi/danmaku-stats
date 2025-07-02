@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 
 class LiveDatabase:
     def __init__(self, platform, room_id,
@@ -46,14 +47,14 @@ class LiveDatabase:
                 self.operate_table_names = [i[0] for i in self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()]
                 self.table_names = ["danmaku", "super_chat", "gifts"]
                 
-                if ("danmaku" in self.table_names) == False:
+                if ("danmaku" in self.operate_table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS danmaku (
                     time DATETIME, username TEXT, context TEXT,
                     uid TEXT,
                     fans_club TEXT, fans_level TEXT
                     )""")                
                 
-                if ("super_chat" in self.table_names) == False:
+                if ("super_chat" in self.operate_table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS super_chat (
                     time DATETIME, username TEXT, context TEXT,
                     price INT, keep_time INT,
@@ -61,7 +62,7 @@ class LiveDatabase:
                     origin_data TEXT
                     )""")                
 
-                if ("gifts" in self.table_names) == False:
+                if ("gifts" in self.operate_table_names) == False:
                     self.cur.execute(f"""CREATE TABLE IF NOT EXISTS gifts (
                     time DATETIME, username TEXT, context TEXT,
                     price INT,
@@ -148,13 +149,16 @@ class LiveDatabase:
             self._lock_tables = True
             for table_name in self.table_names:
                 
-                first_time_row = self.cur.execute(f"SELECT time FROM {table_name} LIMIT 1").fetchone()
+                # 时间异常值处理
+                avail_first_time = datetime.datetime(year=2018, month=1, day=29, hour=3)
+                now_time = datetime.datetime.now()
+
+                first_time_row = self.cur.execute(f"SELECT time FROM {table_name} WHERE time BETWEEN ? AND ? ORDER BY time ASC LIMIT 1", (avail_first_time, now_time)).fetchone()    # 获取time中的最小数据
                 if not first_time_row:
                     time_diff = datetime.timedelta(minutes=1)
                 else:
                     first_time_str = first_time_row[0]
                     logging.info(f"First time of {table_name} is {first_time_str}.")
-                    now_time = datetime.datetime.now()
                     first_time = datetime.datetime.strptime(first_time_str, "%Y-%m-%d %H:%M:%S")
                     time_diff = now_time - first_time
 
@@ -167,9 +171,9 @@ class LiveDatabase:
                     # 创建存储旧数据的新的表
                     self.cur.execute(f"CREATE TABLE {new_table_name} AS SELECT * FROM {table_name} WHERE 1=0")
                     # 将老表中的数据迁移到新表，只迁移截止到今天0点的数据，减少数据重叠信息损失带来的问题
-                    self.cur.execute(f"INSERT INTO {new_table_name} SELECT * FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_start))
+                    self.cur.execute(f"INSERT INTO {new_table_name} SELECT * FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_end))
                     # 删除原表中的数据
-                    self.cur.execute(f"DELETE FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_start))
+                    self.cur.execute(f"DELETE FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_end))
                     self.conn.commit()
 
                     logging.info(f"已创建新表 {new_table_name}")
@@ -273,19 +277,18 @@ class LiveDatabase:
         运行筛选方法的主函数，对传递过来的table进行逐一处理，并将其加入到结果frame当中。
         """
         keys = getattr(self, f"{self.flit_table}_keys")
-        result_frame = pd.DataFrame([], columns=keys)
-        try:
-            for sheet_name in self.avail_tables:
-                select_head = f"SELECT * FROM {sheet_name} WHERE "
-                sql_select = select_head + self.select_sentence
+        result_frame = pd.DataFrame([], columns=keys, dtype=np.float64)    ### TOFIX: 这里的`dtype`有点抽象，规定这个能过但是不知道为什么能过
+        for sheet_name in self.avail_tables:
+            select_head = f"SELECT * FROM {sheet_name} WHERE "
+            sql_select = select_head + self.select_sentence
 
-                result = self.cur.execute(sql_select, self.select_paramters).fetchall()    
-                
-                result_dict = self._format_results(keys, result)
-                result_frame = pd.merge(pd.DataFrame.from_dict(result_dict), result_frame, how="outer")
-        
-        except Exception as e:
-            raise e("You should run para_methods first!")
+            result = self.cur.execute(sql_select, self.select_paramters).fetchall()    
+            
+            result_dict = self._format_results(keys, result)
+            # print(sheet_name)
+            # print(result_frame.dtypes)
+            # print(pd.DataFrame.from_dict(result_dict).dtypes)
+            result_frame = pd.merge(pd.DataFrame.from_dict(result_dict), result_frame, how="outer")
         
         # 在运行完一轮筛选后对语句和参数进行清除
         self._select_init()

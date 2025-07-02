@@ -146,7 +146,7 @@ class GenStats:
 
         # 此处判断应该更新的条件，并执行更新操作
         if now_interval > eval(f"datetime.timedelta({timeunit}={timevalue})")/10 and now_interval > datetime.timedelta(seconds=60):    # 判断更新时间和现在的时间间隔，如果大于指定时间间隔就发生更新，并将更新时间重写入config文件中
-            eval(f"self.get_static_data({timeunit}={timevalue}')")
+            eval(f"self.get_static_data({timeunit}={timevalue})")
             new_results = self.update_function(normalize_bool=False,
                                            send_count=info_count)
             
@@ -211,7 +211,7 @@ class GenStats:
             if now_interval >= update_interval:
                 time.sleep(np.random.randint(10))
                 logging.info(f"Dynamic update the {self.update_timevalue}{self.update_timeunit} data.")
-                eval(f"self.get_static_data({self.update_timeunit}={self.update_timevalue}')")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
+                eval(f"self.get_static_data({self.update_timeunit}={self.update_timevalue})")    # 这里和update_interval做区分，能够确保获得的数据时间远点和更新是独立的
                 new_results = self.update_function(normalize_bool=False,
                                             send_count=100)
                 
