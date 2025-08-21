@@ -16,6 +16,7 @@ from flask_limiter.util import get_remote_address
 from tools.danmaku_static import DanmakuStats
 from tools.username_static import UsernameStats
 from tools.desuwa import DesuwaStats
+from webui.backend.tools.zywoo import ZywooStats
 
 interface_path = os.path.dirname(__file__)
 sys.path.insert(0, interface_path)
@@ -94,6 +95,22 @@ def desuwa_mes():
 
     else:
         return jsonify({"data_status": "Desuwa not support this live room."})
+
+@server.route("/zywoo", methods=["POST"])
+def Zywoo_mes():
+    platform = request.json.get('platform')
+    room_id = request.json.get('room_id')
+    timeunit = request.json.get('timeunit')
+    timevalue = request.json.get('timevalue')
+
+    if platform == "douyu" and str(room_id) == "6979222":
+        StaticClass = ZywooStats(platform, room_id)
+        message = StaticClass.run_send(timevalue=timevalue, timeunit=timeunit)
+
+        return message
+
+    else:
+        return jsonify({"data_status": "Zywoo not support this live room."})
 
 @server.route("/desuwa_force", methods=["POST"])
 def desuwa_force():
