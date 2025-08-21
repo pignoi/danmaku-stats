@@ -22,13 +22,13 @@
     <div class="top-section">
       <div class="form">
         <div class="form-row">
-          
-          <div class="form-info">
-            <label>平台: {{ platform }}</label>
+          <div class="form-group">
+            <label> {{infoLabel}} </label>
           </div>
-          <div class="form-info">
-            <label>房间号: {{ room_id }}</label>
-          </div>
+        </div>
+
+        <div class="form-row">
+
           
           <div class="form-group">
             <label for="timeLength">类型:</label>
@@ -49,32 +49,19 @@
           </div>
           
           <div class="form-group">
-            <label for="timeUnit">单位:</label>
-            <select class="top-select" id="timeUnit" v-model="selectedTimeUnit">
-              <option value="minutes">分钟</option>
-              <option value="seconds">秒</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
             <button @click="fetchData">确定</button>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>{{ infoLabel }}</label>
-          </div>
-        </div>
       </div>
     </div>
     <!-- 中部的10…% -->
     <div class="mid-section">
       <div class="mid-background">
-        <a href="https://wjq6657.top/desuwa">欢迎访问desuwa统计界面</a>
+        <a href="https://wjq6657.top/">回到弹幕统计界面</a>
       </div>
       <div class="mid-background">
-        <a href="https://wjq6657.top/zywoo">欢迎访问zywoo统计界面</a>
+        <a href="https://wjq6657.top/desuwa">前往desuwa统计界面</a>
       </div>
     </div>
     <!-- 下部 85%：结果表格 -->
@@ -120,17 +107,16 @@ export default {
       platform: this.$route.query.platform, // 从路由参数中获取平台
       room_id: this.$route.query.room_id, // 从路由参数中获取房间号码
       selectedInfoName: "弹幕",
-      selectedTimeUnit: 'minutes', // 默认时间单位
-      selectedTimeLength: 1, // 默认时间长度
-      infoNameOptions: ["弹幕","用户id"],
-      timeOptions: [1, 2, 5, 30, 600], // 默认时间选项（分钟）
+      selectedTimeLength: "历史统计", // 默认时间长度
+      infoNameOptions: ["弹幕", "圣人id"],
+      timeOptions: ["1分钟", "1小时", "1天", "历史统计"], // 默认时间选项（分钟）
       tableData: [], // 全部表格数据
       currentPage: 1, // 当前页码
       itemsPerPage: 10, // 每页显示的数据条数
       showSponsorModal: false,
       infoNameDict:{
         "弹幕": "danmaku",
-        "用户id": "username"
+        "圣人id": "username"
       }
     };
   },
@@ -147,16 +133,6 @@ export default {
     },
   },
   watch: {
-    // 监听时间单位变化
-    selectedTimeUnit(newUnit) {
-      if (newUnit === 'minutes') {
-        this.timeOptions = [1, 2, 5, 30, 600];
-      } else if (newUnit === 'seconds') {
-        this.timeOptions = [10, 30];
-      }
-      this.selectedTimeLength = this.timeOptions[0]; // 重置为第一个选项
-      // this.fetchData(); // 自动更新数据
-    },
     // 监听时间尺度变化
     selectedTimeLength() {
       this.fetchData(); // 自动更新数据
@@ -168,25 +144,73 @@ export default {
   methods: {
     // 获取数据
     async fetchData() {
+      let post_timeunit = null;
+      let post_timevalue = null;
+
+      let temp_infoLabel = null;
+
+      let names = null;
+      let values = null;
+      let last_update = null;
+      
+      if (this.selectedTimeLength === "1分钟") {
+        post_timeunit = "minutes";
+        post_timevalue = "1";
+        temp_infoLabel = "玩机器直播间1分钟内zywoo弹幕统计";
+      };
+      if (this.selectedTimeLength === "1小时") {
+        post_timeunit = "hours";
+        post_timevalue = "1";
+        temp_infoLabel = "玩机器直播间1小时内zywoo弹幕统计";
+      };
+      if (this.selectedTimeLength === "1天") {
+        post_timeunit = "days";
+        post_timevalue = "1";
+        temp_infoLabel = "玩机器直播间1天内zywoo弹幕统计";
+      }
+      if (this.selectedTimeLength === "历史统计") {
+        post_timeunit = "days";
+        post_timevalue = "100000";
+        temp_infoLabel = "玩机器直播间历史zywoo弹幕统计";
+      }
+
       const data = {
-        platform: this.platform,
-        room_id: this.room_id,
-        info_name: this.infoNameDict[this.selectedInfoName],
-        timeunit: this.selectedTimeUnit,
-        timevalue: this.selectedTimeLength,
-        info_count:100,
+        platform: "douyu",
+        room_id: "6979222",
+        timeunit: post_timeunit,
+        timevalue: post_timevalue
       };
 
       try {
         this.infoLabel = "正在更新，请不要重复点击~";
-        const response = await axios.post('https://media.axuan.wang/get_by_time', data);
+        const response = await axios.post('https://media.axuan.wang/zywoo', data);
         
         if (response.data["data_status"] === "Full Pass."){
-          const names = response.data["origin_data"]["showinfos"];
-          const values = response.data["origin_data"]["counts"];
-          const last_update = response.data["last_update"];
+          if (this.infoNameDict[this.selectedInfoName] == "danmaku"){
+            names = response.data["origin_data"]["showinfos"][0];
+            values = response.data["origin_data"]["counts"][0];
+            last_update = response.data["last_update"];
+          }
+          else{
+            names = response.data["origin_data"]["showinfos"][1];
+            values = response.data["origin_data"]["counts"][1];
+            last_update = response.data["last_update"];
+          }
+        
+        if (this.selectedTimeLength === "1分钟") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前1分钟zywoo弹幕统计";
+        };
+        if (this.selectedTimeLength === "1小时") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前1小时zywoo弹幕统计";
+        };
+        if (this.selectedTimeLength === "1天") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前一天zywoo弹幕统计";
+        }
+        if (this.selectedTimeLength === "历史统计") {
+          temp_infoLabel = "玩机器直播间"+last_update+"之前历史zywoo弹幕统计";
+        }
 
-          this.infoLabel = "最后更新时间: " + last_update;
+          this.infoLabel = temp_infoLabel;
           // 将名称和数值组合成表格数据
           this.tableData = names.map((name, index) => ({
             name,
@@ -240,7 +264,7 @@ export default {
   },
   mounted() {
     // 初始化时加载数据
-    document.title = this.platform+" "+this.room_id+" "+"弹幕统计";
+    document.title = "玩机器直播间zywoo弹幕统计";
     this.fetchData();
   },
 };
@@ -248,10 +272,10 @@ export default {
 
 <style scoped>
 
-/* 样式 */
+/* 全局样式 */
 body, html {
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   height: 100%;
 }
 
@@ -329,7 +353,7 @@ body, html {
 }
 
 .top-select {
-  width: 80px;
+  width: 120px;
   height: 35px;
 }
 
@@ -468,13 +492,13 @@ th {
 
 @media (max-width: 768px) {
 .top-section {
-  height: 20%;
+  height: 22%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   border-bottom: 1px solid #ccc;
-  padding: 0px;
+  padding: 10px;
 }
 
 .form-row {
@@ -488,14 +512,9 @@ th {
   display: none;
 }
 
-/* .mid-section {
-  height: 3%;
-  padding: 0px;
-} */
-
 .bottom-section {
   height: 78%;
-  padding: 0px;
+  padding: 20px;
   overflow-y: auto; /* 允许滚动 */
 }
 }

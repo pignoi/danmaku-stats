@@ -60,6 +60,9 @@
       <div class="mid-background">
         <a href="https://wjq6657.top/">回到弹幕统计界面</a>
       </div>
+      <div class="mid-background">
+        <a href="https://wjq6657.top/zywoo">前往zywoo统计界面</a>
+      </div>
     </div>
     <!-- 下部 85%：结果表格 -->
     <div class="bottom-section">

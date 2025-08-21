@@ -13,7 +13,7 @@ from .data_filter import GenStats
 class ZywooStats(GenStats):
     def __init__(self, platform: str, room_id):
 
-        avail_info = "485"
+        avail_info = "zywoo"
         update_times = {"1minutes":"", "1hours":"", "1days":"", "100000days":""}
         info_sheet_name = "danmaku"
 

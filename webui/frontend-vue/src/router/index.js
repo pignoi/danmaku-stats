@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Selection from '../components/Selection.vue'; // 引入你的 Vue 组件
 import StatsShow from '../components/StatsShow.vue'; // 引入新界面
 import desuwa from '../components/desuwa.vue'; // 引入新界面
+import zywoo from '../components/zywoo.vue'; // 引入新界面
 
 const routes = [
   {
@@ -19,6 +20,12 @@ const routes = [
     path: '/desuwa',
     name: 'desuwa',
     component: desuwa,
+    props: true, // 允许通过路由传递参数
+  },
+  {
+    path: '/zywoo',
+    name: 'zywoo',
+    component: zywoo,
     props: true, // 允许通过路由传递参数
   },
 ];
