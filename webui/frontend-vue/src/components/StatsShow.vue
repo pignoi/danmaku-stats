@@ -57,7 +57,7 @@
           </div>
           
           <div class="form-group">
-            <button @click="fetchData">确定</button>
+            <button @click="fetchData" :disabled="isLoading">确定</button>
           </div>
         </div>
 
@@ -112,6 +112,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE } from '../api.js';
 
 export default {
   data() {
@@ -128,6 +129,8 @@ export default {
       currentPage: 1, // 当前页码
       itemsPerPage: 10, // 每页显示的数据条数
       showSponsorModal: false,
+      isLoading: false, // 是否正在请求中
+      fetchSeq: 0, // 请求序号，用于丢弃过期响应
       infoNameDict:{
         "弹幕": "danmaku",
         "用户id": "username"
@@ -168,6 +171,10 @@ export default {
   methods: {
     // 获取数据
     async fetchData() {
+      this.fetchSeq += 1;
+      const seq = this.fetchSeq;
+      this.isLoading = true;
+
       const data = {
         platform: this.platform,
         room_id: this.room_id,
@@ -179,7 +186,10 @@ export default {
 
       try {
         this.infoLabel = "正在更新，请不要重复点击~";
-        const response = await axios.post('https://media.axuan.wang/get_by_time', data);
+        const response = await axios.post(`${API_BASE}/get_by_time`, data);
+
+        // 如果期间发起了新的请求，丢弃这次过期响应
+        if (seq !== this.fetchSeq) return;
         
         if (response.data["data_status"] === "Full Pass."){
           const names = response.data["origin_data"]["showinfos"];
@@ -204,13 +214,14 @@ export default {
         };
 
       } catch (error) {
+        if (seq !== this.fetchSeq) return;
         console.error('请求失败:', error);
-        // alert('数据请求失败');
         this.infoLabel = "请求失败";
-        this.tableData = [].map((name, index) => ({
-          name,
-          value: [][index],
-        }));
+        this.tableData = [];
+      } finally {
+        if (seq === this.fetchSeq) {
+          this.isLoading = false;
+        }
       }
     },
     // 复制到剪贴板

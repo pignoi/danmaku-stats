@@ -28,7 +28,7 @@ class LiveDatabase:
             raise FileExistsError(f"Platform {platform} Do Not Exist.")
     
         # 在 collect_mode==False 的情况下需要路径下存在对应的数据库再执行后续任务，否则就不会执行
-        if (collect_mode == False and Path(path_to_db).exists() == True) or (collect_mode == True):
+        if collect_mode or Path(path_to_db).exists():
             # 如果不是收集模式，在连接数据库的时候要以只读模式打开，防止和写入过程的连接产生冲突
             if collect_mode == False:
                 if flit_table == "If not in collect mode, must set!":
@@ -93,7 +93,8 @@ class LiveDatabase:
                 split_thread.start()
 
             self.danmaku_keys = ["time", "username", "context", "uid", "fans_club", "fans_level"]
-            self.super_chat_keys = ["time", "username", "context", "price", "keep_time", "uid", "fans_club", "fans_level"]
+            # 与建表语句保持一致：SC 表保存的是原始数据 origin_data，不包含 uid 字段
+            self.super_chat_keys = ["time", "username", "context", "price", "keep_time", "fans_club", "fans_level", "origin_data"]
             
             # 为筛选模式初始化变量
             self._select_init()
@@ -108,6 +109,7 @@ class LiveDatabase:
             try:
                 self.cur.execute(sql_insert, data)
             except Exception as e:
+                logging.exception(f"插入 {sheet_name} 数据失败: {e}")
                 self.conn.rollback()
             finally:
                 self.conn.commit()
@@ -128,6 +130,7 @@ class LiveDatabase:
                 try:
                     self.cur.executemany(sql_insert, self.cache_danmaku)
                 except Exception as e:
+                    logging.exception(f"批量写入弹幕失败: {e}")
                     self.conn.rollback()
                 finally:
                     self.conn.commit()
@@ -140,9 +143,8 @@ class LiveDatabase:
     def monitor_danmaku(self):
         """对drop到数据库的线程进行手动监控的方法，防止意外终止，但是好像加了daemon之后就还好"""
         while True:
-            if self.cache_thread.is_alive() == False:
+            if not self.cache_thread.is_alive():
                 logging.info("danmaku drop cache child process died.")
-                # self.cache_thread.join()
                 self.cache_thread = threading.Thread(target=self.drop_cache, daemon=True)
                 self.cache_thread.start()
             time.sleep(0.5)
@@ -152,41 +154,54 @@ class LiveDatabase:
         # 因为一段时间内的总弹幕量不会非常大，目前的想法是每隔一段时间对本表中第一条数据进行和现在的时间进行比较，如果超出一定阈值就将**一定时间范围**的数据放到一个新表，然后将对应的数据在本表中删除
         # 需要更新的内容: self.table_names，后续的功能需要根据这个变量的内容进行匹配修改，如history的数值需要对符合name的所有表进行遍历
         while True:
-            self._lock_tables = True
-            for table_name in self.table_names:
-                
-                # 时间异常值处理
-                avail_first_time = datetime.datetime(year=2018, month=1, day=29, hour=3)
-                now_time = datetime.datetime.now()
+            try:
+                self._lock_tables = True
+                for table_name in self.table_names:
 
-                first_time_row = self.cur.execute(f"SELECT time FROM {table_name} WHERE time BETWEEN ? AND ? ORDER BY time ASC LIMIT 1", (avail_first_time, now_time)).fetchone()    # 获取time中的最小数据
-                if not first_time_row:
-                    time_diff = datetime.timedelta(minutes=1)
-                else:
+                    # 时间异常值处理
+                    avail_first_time = datetime.datetime(year=2018, month=1, day=29, hour=3)
+                    now_time = datetime.datetime.now()
+
+                    # 获取time中的最小数据
+                    first_time_row = self.cur.execute(f"SELECT time FROM {table_name} WHERE time BETWEEN ? AND ? ORDER BY time ASC LIMIT 1", (avail_first_time, now_time)).fetchone()
+                    if not first_time_row:
+                        # 空表无需分表，直接跳过，避免后续引用未定义的 first_time
+                        continue
+
                     first_time_str = first_time_row[0]
                     logging.info(f"First time of {table_name} is {first_time_str}.")
                     first_time = datetime.datetime.strptime(first_time_str, "%Y-%m-%d %H:%M:%S")
                     time_diff = now_time - first_time
 
-                if time_diff > datetime.timedelta(weeks=1):
-                    to_split_time_start = first_time
-                    to_split_time_end = datetime.datetime(year=now_time.year, month=now_time.month, day=now_time.day-1, hour=23, minute=59, second=59)
-                    new_table_name = f"{table_name}_{to_split_time_start.strftime('%Y%m%d')}_{to_split_time_end.strftime('%Y%m%d')}"
-                    
-                    self.conn.execute("BEGIN TRANSACTION")
-                    # 创建存储旧数据的新的表
-                    self.cur.execute(f"CREATE TABLE {new_table_name} AS SELECT * FROM {table_name} WHERE 1=0")
-                    # 将老表中的数据迁移到新表，只迁移截止到今天0点的数据，减少数据重叠信息损失带来的问题
-                    self.cur.execute(f"INSERT INTO {new_table_name} SELECT * FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_end))
-                    # 删除原表中的数据
-                    self.cur.execute(f"DELETE FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_end))
-                    self.conn.commit()
+                    if time_diff > datetime.timedelta(weeks=1):
+                        to_split_time_start = first_time
+                        # 用今天0点减1秒作为截止时间，避免每月1号 day-1=0 导致的崩溃
+                        to_split_time_end = datetime.datetime(now_time.year, now_time.month, now_time.day) - datetime.timedelta(seconds=1)
+                        new_table_name = f"{table_name}_{to_split_time_start.strftime('%Y%m%d')}_{to_split_time_end.strftime('%Y%m%d')}"
 
-                    logging.info(f"已创建新表 {new_table_name}")
-                
-                self.operate_table_names = [i[0] for i in self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()]
-                
-            self._lock_tables = False
+                        self.conn.execute("BEGIN TRANSACTION")
+                        # 创建存储旧数据的新的表
+                        self.cur.execute(f"CREATE TABLE {new_table_name} AS SELECT * FROM {table_name} WHERE 1=0")
+                        # 将老表中的数据迁移到新表，只迁移截止到今天0点的数据，减少数据重叠信息损失带来的问题
+                        self.cur.execute(f"INSERT INTO {new_table_name} SELECT * FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_end))
+                        # 删除原表中的数据
+                        self.cur.execute(f"DELETE FROM {table_name} WHERE time BETWEEN ? AND ?", (to_split_time_start, to_split_time_end))
+                        self.conn.commit()
+
+                        logging.info(f"已创建新表 {new_table_name}")
+
+                    self.operate_table_names = [i[0] for i in self.cur.execute("select name from sqlite_master where type='table' order by name").fetchall()]
+
+            except Exception as e:
+                # 分表线程出错时记录日志而不是静默死亡
+                logging.exception(f"分表操作失败: {e}")
+                try:
+                    self.conn.rollback()
+                except Exception:
+                    pass
+            finally:
+                self._lock_tables = False
+
             time.sleep(3600*24)
 
     # 以下是对筛选模式功能的一些定义
@@ -246,11 +261,8 @@ class LiveDatabase:
                 table_start_time = datetime.datetime.strptime(avail_table.split("_")[-2], "%Y%m%d")
                 table_end_time = datetime.datetime.strptime(avail_table.split("_")[-1], "%Y%m%d")
 
-                if (table_start_time > start_time) and (table_end_time < end_time):
-                    time_table_fliter.append(avail_table)
-                elif (table_start_time < start_time) and (table_end_time < end_time) and (table_end_time > start_time):
-                    time_table_fliter.append(avail_table)
-                elif (table_start_time > start_time) and (table_end_time > end_time) and (table_start_time < end_time):
+                # 两个时间区间有交集即选中，覆盖"分表完全包含查询区间"等所有情况
+                if table_start_time <= end_time and table_end_time >= start_time:
                     time_table_fliter.append(avail_table)
         
         # 对全局的变量进行修改

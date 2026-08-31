@@ -12,9 +12,7 @@ parser.add_argument('-r', '--room', dest="room_id", default=3044248, type=int, h
 parser.add_argument('-g', '--accept_gift', dest="accept_gift", default="False", type=str, help='set accept gift message or not.')
 
 # 非docker生产环境下设置指定的环境变量，在docker环境中则自动识别为Dockerfile中设置的变量，同时满足程序调试和生产环境
-try:
-    os.environ["IS_DOCKER"] == None
-except KeyError:
+if "IS_DOCKER" not in os.environ:
     os.environ["USERINFO"] = os.path.join(os.path.dirname(__file__), "..", "userinfo.json")
     os.environ["DB_PATH"] = os.path.join(os.path.dirname(__file__), "..", "dbs")
 

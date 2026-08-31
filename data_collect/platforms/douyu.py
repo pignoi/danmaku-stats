@@ -31,7 +31,10 @@ class DouyuDanmaku:
         self.client.run_forever()
 
     def stop(self):
-        self.logout()
+        try:
+            self.logout()
+        except Exception:
+            logging.exception("logout failed.")
         self.client.close()
 
     def on_open(self, wss):
@@ -44,7 +47,7 @@ class DouyuDanmaku:
         self.heartbeat_thread.start()
 
     def on_error(self, wssobj, mes):
-        print("error: ", mes)
+        logging.warning("斗鱼连接错误: %s", mes)
 
     def on_close(self,wssobj, b, c):
         # print(b,c)
@@ -166,14 +169,20 @@ class DouyuDanmaku:
         cursor = 0
         msg = []
         while cursor < len(msg_bytes):
-            #根据斗鱼协议，报文 前四位与第二个四位，都是消息长度，取前四位，转化成整型
-            content_length = int.from_bytes(msg_bytes[cursor: (cursor + 4) - 1], byteorder='little')
+            # 根据斗鱼协议，报文前4位是消息长度，完整读取这4个字节（原实现少读了1个字节，靠长度高位为0才碰巧可用）
+            if cursor + 4 > len(msg_bytes):
+                logging.warning("斗鱼报文长度不足，丢弃剩余 %s 字节。", len(msg_bytes) - cursor)
+                break
+            content_length = int.from_bytes(msg_bytes[cursor: cursor + 4], byteorder='little')
+            # 防御异常报文：长度为0会导致游标不前进从而死循环，超界则丢弃剩余部分
+            if content_length <= 0 or cursor + 4 + content_length > len(msg_bytes):
+                logging.warning("斗鱼报文长度异常: %s，丢弃剩余数据。", content_length)
+                break
             #报文长度不包含前4位，从第5位开始截取消息长度的字节流，并扣除前8位的协议头，取出正文，用utf-8编码成字符串
             content = msg_bytes[(cursor + 4) + 8:(cursor + 4) + content_length - 1].decode(encoding='utf-8',
                                                                                         errors='ignore')
             msg.append(content)
             cursor = (cursor + 4) + content_length
-        # print(msg)
         return msg
 
     def msg_format(self, msg_str):
@@ -182,7 +191,7 @@ class DouyuDanmaku:
             msg_list = msg_str.split('/')[0:-1]
             for msg in msg_list:
                 msg = msg.replace('@s', '/').replace('@A', '@')
-                msg_tmp = msg.split('@=')
+                msg_tmp = msg.split('@=', 1)
                 msg_dict[msg_tmp[0]] = msg_tmp[1]
             return msg_dict
         except Exception as e:
@@ -201,4 +210,3 @@ class DouyuDanmaku:
         for gift in gift_json2:
             gift_json[gift] = gift_json2[gift]['name']
         return gift_json
-

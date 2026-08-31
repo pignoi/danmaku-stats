@@ -49,7 +49,7 @@
           </div>
           
           <div class="form-group">
-            <button @click="fetchData">确定</button>
+            <button @click="fetchData" :disabled="isLoading">确定</button>
           </div>
         </div>
 
@@ -99,6 +99,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE } from '../api.js';
 
 export default {
   data() {
@@ -114,6 +115,8 @@ export default {
       currentPage: 1, // 当前页码
       itemsPerPage: 10, // 每页显示的数据条数
       showSponsorModal: false,
+      isLoading: false, // 是否正在请求中
+      fetchSeq: 0, // 请求序号，用于丢弃过期响应
       infoNameDict:{
         "弹幕": "danmaku",
         "圣人id": "username"
@@ -144,6 +147,10 @@ export default {
   methods: {
     // 获取数据
     async fetchData() {
+      this.fetchSeq += 1;
+      const seq = this.fetchSeq;
+      this.isLoading = true;
+
       let post_timeunit = null;
       let post_timevalue = null;
 
@@ -183,7 +190,10 @@ export default {
 
       try {
         this.infoLabel = "正在更新，请不要重复点击~";
-        const response = await axios.post('https://media.axuan.wang/zywoo', data);
+        const response = await axios.post(`${API_BASE}/zywoo`, data);
+
+        // 如果期间发起了新的请求，丢弃这次过期响应
+        if (seq !== this.fetchSeq) return;
         
         if (response.data["data_status"] === "Full Pass."){
           if (this.infoNameDict[this.selectedInfoName] == "danmaku"){
@@ -225,16 +235,20 @@ export default {
         }
         else if (response.data["data_status"] === "No Avail Data in This Time Range."){
           this.infoLabel = "短时间内暂无数据~";
-        };
+        }
+        else if (response.data["data_status"] === "Data not ready."){
+          this.infoLabel = "数据正在生成中，请稍后再试~";
+        }
 
       } catch (error) {
+        if (seq !== this.fetchSeq) return;
         console.error('请求失败:', error);
-        // alert('数据请求失败');
         this.infoLabel = "请求失败";
-        this.tableData = [].map((name, index) => ({
-          name,
-          value: [][index],
-        }));
+        this.tableData = [];
+      } finally {
+        if (seq === this.fetchSeq) {
+          this.isLoading = false;
+        }
       }
     },
     // 复制到剪贴板

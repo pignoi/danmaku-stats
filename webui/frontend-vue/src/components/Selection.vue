@@ -22,6 +22,7 @@
 
 <script>
 import axios from 'axios';
+import { API_BASE } from '../api.js';
 
 export default {
   data() {
@@ -43,7 +44,7 @@ export default {
       };
 
       try {
-        const response = await axios.post('https://media.axuan.wang/check', data);
+        const response = await axios.post(`${API_BASE}/check`, data);
         console.log('提交成功');
 
         if (response.data['message'] === "yes") {
@@ -51,7 +52,7 @@ export default {
             name: 'stats',
             query: { platform: data.platform, room_id: data.room_id },
           });
-        } else if (response.data['message'] === "yes") {
+        } else if (response.data['message'] === "no") {
           alert('没有收集该直播间的信息~');
         }
       } catch (error) {

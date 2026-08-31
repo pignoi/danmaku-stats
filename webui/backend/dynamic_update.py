@@ -1,13 +1,18 @@
-import sys
-sys.path.append("../../")
 import logging
 logging.basicConfig(level=logging.INFO, 
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+import sys
 import time
+from pathlib import Path
+
+BACKEND_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BACKEND_DIR.parents[1]
+sys.path.insert(0, str(BACKEND_DIR))
+sys.path.insert(0, str(REPO_ROOT))
 
 from tools.desuwa import DesuwaStats
-from webui.backend.tools.zywoo import ZywooStats
+from tools.zywoo import ZywooStats
 
 DesuwaHistory = DesuwaStats(platform="douyu", room_id="6979222")
 Desuwa1Day= DesuwaStats(platform="douyu", room_id="6979222")
